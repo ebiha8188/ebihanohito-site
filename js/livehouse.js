@@ -626,9 +626,6 @@ class World {
     const top = this.mat('#d8c39c', { roughness: 0.35 });
     this.box(3.8, 0.08, 0.86, top, 0, 1.09, 0, g);
     // カウンター正面の「受付」
-    const sign = textPlane(['受付  RECEPTION'], { w: 1024, h: 150, bg: 'rgba(0,0,0,0)', color: '#ffe6c7', font: `70px ${FONT_DISPLAY}` }, 2.4, 0.35);
-    sign.position.set(0, 0.62, 0.356);
-    g.add(sign);
     // 卓上：ベル、チケット立て、フライヤー
     const bell = this.mat('#e6c36a', { metalness: 0.9, roughness: 0.25 });
     const b = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 7, 0, Math.PI * 2, 0, Math.PI / 2), bell);
@@ -706,12 +703,12 @@ class World {
     // カウンター（壁と平行、客席側が +x）
     const body = this.mat('#2a1712', { emissive: '#ffb36b', emissiveIntensity: 0, unique: true });
     this.addHover('bar', body, 0, 0.18);
-    this.box(0.62, 1.08, 5.4, body, -5.6, 0.54, -0.9, g);
+    this.box(0.62, 1.08, 5.0, body, -5.6, 0.54, -1.1, g);
     const top = this.mat('#b07a45', { roughness: 0.3, metalness: 0.1 });
-    this.box(0.86, 0.08, 5.6, top, -5.62, 1.12, -0.9, g);
+    this.box(0.86, 0.08, 5.2, top, -5.62, 1.12, -1.1, g);
     // カウンター下のライン照明
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 5.3), new THREE.MeshBasicMaterial({ color: '#ffb36b' }));
-    strip.position.set(-5.27, 0.98, -0.9); g.add(strip);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 4.9), new THREE.MeshBasicMaterial({ color: '#ffb36b' }));
+    strip.position.set(-5.27, 0.98, -1.1); g.add(strip);
     // スツール
     const seat = this.mat('#c0392b', { roughness: 0.5 });
     const leg = this.mat('#9aa3ad', { metalness: 0.8, roughness: 0.3 });
@@ -1017,14 +1014,7 @@ class World {
         s.userData.wave(t * 1.5 + i);
       });
     });
-    // フロア中央の「COMING SOON」立て看板
-    const sign = textPlane(['COMING', 'SOON'], { w: 512, h: 400, bg: '#ffd36b', color: '#1a1410', font: `110px ${FONT_DISPLAY}`, line: 130, border: '#1a1410' }, 1.2, 0.94);
-    const easel = new THREE.Group();
-    sign.position.y = 1.2; easel.add(sign);
-    const legM = this.mat('#6b4423');
-    [-0.45, 0.45].forEach(x => { const l = this.box(0.05, 1.5, 0.05, legM, x, 0.75, -0.08, easel); l.rotation.x = 0.08; });
-    easel.position.set(3.6, 0, -0.6); easel.rotation.y = -0.35;
-    this.scene.add(easel);
+    // フロアをクリックしてもステージへ
     this.hotspot('stage', [8.5, 1.8, 5.0, 0, 0.9, -2.4]);
   }
 
