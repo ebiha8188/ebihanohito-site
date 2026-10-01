@@ -6,6 +6,50 @@ const FONT_DISPLAY = '"Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-seri
 const FONT_BODY = '"Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// 軽量化：光の計算が安い Lambert に統一し、同じ見た目のマテリアルは1つを使い回す
+const matCache = new Map();
+function M(o = {}) {
+  const { roughness, metalness, unique, ...opts } = o;
+  void roughness; void metalness;
+  const key = unique ? null : JSON.stringify(opts, (k, v) => (v && v.isTexture ? v.uuid : v));
+  if (key && matCache.has(key)) return matCache.get(key);
+  const m = new THREE.MeshLambertMaterial(opts);
+  if (key) matCache.set(key, m);
+  return m;
+}
+
+// 動かない部品を、マテリアルごとに1つのメッシュへまとめる（描画命令を減らす）
+function bake(node) {
+  for (const c of [...node.children]) if (!c.isMesh && c.children.length) bake(c);
+  const groups = new Map();
+  for (const c of node.children) {
+    if (!c.isMesh || c.userData.keep || c.children.length || c.material.transparent) continue;
+    if (!groups.has(c.material)) groups.set(c.material, []);
+    groups.get(c.material).push(c);
+  }
+  for (const [material, list] of groups) {
+    if (list.length < 2) continue;
+    const parts = list.map(m => {
+      m.updateMatrix();
+      const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+      g.applyMatrix4(m.matrix);
+      return g;
+    });
+    const merged = new THREE.BufferGeometry();
+    for (const n of ['position', 'normal', 'uv']) {
+      if (!parts.every(g => g.attributes[n])) continue;
+      const size = parts[0].attributes[n].itemSize;
+      const arr = new Float32Array(parts.reduce((a, g) => a + g.attributes[n].array.length, 0));
+      let off = 0;
+      for (const g of parts) { arr.set(g.attributes[n].array, off); off += g.attributes[n].array.length; }
+      merged.setAttribute(n, new THREE.BufferAttribute(arr, size));
+    }
+    node.add(new THREE.Mesh(merged, material));
+    for (const m of list) { node.remove(m); m.geometry.dispose(); }
+    parts.forEach(g => g.dispose());
+  }
+}
+
 // ---------- 視点 ----------
 // pos はカメラ位置、target は見る先。縦長画面では自動で引きの位置になる
 const VIEWS = {
@@ -21,11 +65,13 @@ export async function start() {
   const canvas = document.getElementById('scene');
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: (devicePixelRatio || 1) < 1.5, powerPreference: 'high-performance' });
   } catch (e) {
     throw new Error('webgl');
   }
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  // 解像度は控えめに。重いと分かったら frame() の中でさらに下げる
+  let dpr = Math.min(devicePixelRatio || 1, 1.5);
+  renderer.setPixelRatio(dpr);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
@@ -282,6 +328,7 @@ export async function start() {
 
   // ---------- ループ ----------
   let lastT = performance.now(), time = 0;
+  const perf = { n: 0, sum: -1500, prev: performance.now() }; // 最初の1.5秒（読み込み直後）は数えない
   const tmpPos = new THREE.Vector3(), tmpTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3();
   const ease = {
     inOut: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
@@ -321,6 +368,13 @@ export async function start() {
     if (Math.abs(offset.x) > 0.5 || Math.abs(offset.y) > 0.5) camera.setViewOffset(W, H, offset.x, offset.y, W, H);
     else camera.clearViewOffset();
 
+    // 2秒ごとに平均フレーム時間を見て、重ければ解像度を一段下げる
+    perf.n++; perf.sum += Math.min(now - perf.prev, 100); perf.prev = now;
+    if (perf.sum > 2000) {
+      const avg = perf.sum / perf.n;
+      if (avg > 26 && dpr > 0.75 && !document.hidden) { dpr = Math.max(0.75, dpr - 0.25); renderer.setPixelRatio(dpr); resize(); }
+      perf.n = 0; perf.sum = 0;
+    }
     world.update(time, dt);
     renderer.render(scene, camera);
     placeMarkers();
@@ -352,14 +406,14 @@ class World {
     this.tankFront = new THREE.Vector3(-5.78, 1.5, 2.45);
   }
 
-  mat(color, opts = {}) { return new THREE.MeshStandardMaterial({ color, roughness: 0.8, metalness: 0.05, ...opts }); }
+  mat(color, opts = {}) { return M({ color, ...opts }); }
   box(w, h, d, m, x, y, z, parent = this.scene) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
     mesh.position.set(x, y, z);
     parent.add(mesh);
     return mesh;
   }
-  cyl(rt, rb, h, m, x, y, z, parent = this.scene, seg = 20) {
+  cyl(rt, rb, h, m, x, y, z, parent = this.scene, seg = 12) {
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m);
     mesh.position.set(x, y, z);
     parent.add(mesh);
@@ -375,6 +429,7 @@ class World {
     this.stage();
     this.floorCrowd();
     this.seaParticles();
+    bake(this.scene);
   }
 
   update(time, dt) { for (const f of this.anim) f(time, dt); }
@@ -388,7 +443,13 @@ class World {
     material.userData.hoverOff = off; material.userData.hoverOn = on;
     (this.hoverables[name] ||= []).push(material);
   }
-  hotspot(obj, name) { obj.userData.go = name; this.hotspots.push(obj); }
+  // クリック判定は見えない箱で（まとめた後のメッシュに左右されず、判定も軽い）
+  hotspot(name, [w, h, d, x, y, z]) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial());
+    m.visible = false; m.position.set(x, y, z);
+    m.userData.go = name; m.userData.keep = true;
+    this.scene.add(m); this.hotspots.push(m);
+  }
 
   // ---------- 光 ----------
   lights() {
@@ -399,14 +460,10 @@ class World {
     s.add(key);
     const recep = new THREE.PointLight('#ffd9a8', 14, 9, 1.6); recep.position.set(3.2, 3.2, 6.6); s.add(recep);
     const bar = new THREE.PointLight('#ffb36b', 16, 9, 1.6); bar.position.set(-5.6, 3.1, -0.6); s.add(bar);
-    const tank = new THREE.PointLight('#3fd4ff', 6, 4.5, 1.6); tank.position.set(-5.2, 1.7, 2.45); s.add(tank);
-    const stageA = new THREE.PointLight('#ff5fa8', 18, 12, 1.4); stageA.position.set(-3, 3.6, -6); s.add(stageA);
-    const stageB = new THREE.PointLight('#5f8bff', 18, 12, 1.4); stageB.position.set(3, 3.6, -6); s.add(stageB);
-    this.anim.push(t => {
-      stageA.intensity = 14 + Math.sin(t * 1.7) * 6;
-      stageB.intensity = 14 + Math.cos(t * 1.3) * 6;
-      tank.intensity = 6 + Math.sin(t * 2.3) * 1.2;
-    });
+    // ステージは1灯で色を回す
+    const stage = new THREE.PointLight('#ff5fa8', 26, 13, 1.4); stage.position.set(0, 3.6, -5.6); s.add(stage);
+    const pink = new THREE.Color('#ff5fa8'), blue = new THREE.Color('#5f8bff');
+    this.anim.push(t => { stage.color.lerpColors(pink, blue, Math.sin(t * 0.9) * 0.5 + 0.5); });
   }
 
   // ---------- 台座・床・壁 ----------
@@ -476,7 +533,7 @@ class World {
     g.position.set(3.2, 0, 5.4);
     this.scene.add(g);
     // カウンター
-    const front = this.mat('#7a2f24', { roughness: 0.55, emissive: '#ff7a57', emissiveIntensity: 0 });
+    const front = this.mat('#7a2f24', { emissive: '#ff7a57', emissiveIntensity: 0, unique: true });
     this.addHover('reception', front, 0, 0.25);
     this.box(3.6, 1.05, 0.7, front, 0, 0.525, 0, g);
     const top = this.mat('#d8c39c', { roughness: 0.35 });
@@ -487,7 +544,7 @@ class World {
     g.add(sign);
     // 卓上：ベル、チケット立て、フライヤー
     const bell = this.mat('#e6c36a', { metalness: 0.9, roughness: 0.25 });
-    const b = new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), bell);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 7, 0, Math.PI * 2, 0, Math.PI / 2), bell);
     b.position.set(-1.25, 1.13, 0.1); g.add(b);
     this.cyl(0.015, 0.015, 0.05, bell, -1.25, 1.25, 0.1, g, 8);
     for (let i = 0; i < 5; i++) {
@@ -537,7 +594,7 @@ class World {
     mat.rotation.x = -Math.PI / 2; mat.position.set(3.2, 0.03, 6.8);
     this.scene.add(mat);
 
-    this.hotspot(g, 'reception');
+    this.hotspot('reception', [4.2, 3.0, 2.4, 3.2, 1.5, 5.0]);
   }
 
   plant(x, z) {
@@ -545,7 +602,7 @@ class World {
     this.cyl(0.26, 0.2, 0.5, pot, x, 0.25, z, this.scene, 16);
     const leaf = this.mat('#2f8a52', { roughness: 0.7 });
     for (let i = 0; i < 7; i++) {
-      const l = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), leaf);
+      const l = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), leaf);
       const a = i / 7 * Math.PI * 2;
       l.scale.set(0.45, 1.4, 0.25);
       l.position.set(x + Math.cos(a) * 0.18, 0.85 + (i % 2) * 0.12, z + Math.sin(a) * 0.18);
@@ -559,7 +616,7 @@ class World {
     const g = new THREE.Group();
     this.scene.add(g);
     // カウンター（壁と平行、客席側が +x）
-    const body = this.mat('#2a1712', { roughness: 0.6, emissive: '#ffb36b', emissiveIntensity: 0 });
+    const body = this.mat('#2a1712', { emissive: '#ffb36b', emissiveIntensity: 0, unique: true });
     this.addHover('bar', body, 0, 0.18);
     this.box(0.62, 1.08, 5.4, body, -5.6, 0.54, -0.9, g);
     const top = this.mat('#b07a45', { roughness: 0.3, metalness: 0.1 });
@@ -583,7 +640,7 @@ class World {
       this.box(0.46, 0.05, 4.6, shelfM, -7.6, y - 0.03, -1.0, g);
       for (let i = 0; i < 11; i++) {
         const c = bottleColors[(i * 3 + row * 2) % bottleColors.length];
-        const m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.15, metalness: 0.1, emissive: c, emissiveIntensity: 0.25, transparent: true, opacity: 0.92 });
+        const m = M({ color: c, emissive: c, emissiveIntensity: 0.25 });
         const h = 0.3 + ((i + row) % 3) * 0.05;
         const z = -3.1 + i * 0.42;
         this.cyl(0.06, 0.07, h, m, -7.6, y + h / 2, z, g, 10);
@@ -606,8 +663,8 @@ class World {
     board.rotation.y = Math.PI / 2; board.position.set(-7.86, 2.1, -4.15);
     this.scene.add(board);
     // カウンターの上：グラスとビール
-    const glass = new THREE.MeshStandardMaterial({ color: '#dff6ff', roughness: 0.05, transparent: true, opacity: 0.35 });
-    const beer = new THREE.MeshStandardMaterial({ color: '#f2b233', roughness: 0.3, emissive: '#c77a00', emissiveIntensity: 0.3 });
+    const glass = M({ color: '#dff6ff', roughness: 0.05, transparent: true, opacity: 0.35 });
+    const beer = M({ color: '#f2b233', roughness: 0.3, emissive: '#c77a00', emissiveIntensity: 0.3 });
     [[-2.4, beer], [-1.1, glass], [0.2, beer]].forEach(([z, m]) => {
       this.cyl(0.07, 0.06, 0.2, m, -5.5, 1.26, z, g, 14);
       if (m === beer) this.cyl(0.072, 0.072, 0.04, this.mat('#fffaf0'), -5.5, 1.38, z, g, 14);
@@ -623,8 +680,7 @@ class World {
       bart.rotation.y = Math.PI / 2 + Math.sin(t * 0.6) * 0.25;
       bart.userData.wave(t * 1.3);
     });
-    this.hotspot(g, 'bar');
-    this.hotspot(bart, 'bar');
+    this.hotspot('bar', [2.8, 3.4, 5.8, -6.4, 1.7, -0.9]);
     void loader;
   }
 
@@ -637,7 +693,7 @@ class World {
     // 台
     this.box(w + 0.15, y0, d + 0.15, this.mat('#1b1d26', { roughness: 0.5 }), 0, y0 / 2, 0, g);
     // 水
-    const water = new THREE.MeshStandardMaterial({ color: '#2fb4e0', emissive: '#1a8fc0', emissiveIntensity: 0.55, transparent: true, opacity: 0.42, roughness: 0.1, depthWrite: false });
+    const water = M({ unique: true, color: '#2fb4e0', emissive: '#1a8fc0', emissiveIntensity: 0.55, transparent: true, opacity: 0.42, roughness: 0.1, depthWrite: false });
     this.addHover('dive', water, 0.55, 1.1);
     const wmesh = this.box(w - 0.04, h - 0.12, d - 0.04, water, 0, y0 + (h - 0.12) / 2, 0, g);
     wmesh.renderOrder = 2;
@@ -652,7 +708,7 @@ class World {
     for (let i = 0; i < 7; i++) {
       const s = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.035, 0.5 + (i % 3) * 0.18, 6), weed);
       s.position.set(-0.25 + (i % 2) * 0.15, y0 + 0.3 + (i % 3) * 0.09, -0.55 + i * 0.17 + (i > 3 ? 0.1 : 0));
-      g.add(s); weeds.push(s);
+      s.userData.keep = true; g.add(s); weeds.push(s);
     }
     // 中のえび
     const shrimp = makeShrimp({ body: '#ff7a57', belly: '#ffc2a8' });
@@ -664,7 +720,7 @@ class World {
     for (let i = 0; i < 10; i++) {
       const b = new THREE.Mesh(new THREE.SphereGeometry(0.018 + (i % 3) * 0.008, 8, 6), bubbleM);
       b.userData = { x: -0.2 + (i % 3) * 0.12, z: -0.5 + (i % 5) * 0.25, s: 0.25 + (i % 4) * 0.08, o: i / 10 };
-      g.add(b); bubbles.push(b);
+      b.userData.keep = true; g.add(b); bubbles.push(b);
     }
     // 水槽のまわりの光
     const halo = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.2), new THREE.MeshBasicMaterial({ map: glowTex('#3fd4ff'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.6 }));
@@ -687,7 +743,7 @@ class World {
       weeds.forEach((s, i) => { s.rotation.x = Math.sin(t * 1.4 + i) * 0.12; });
       halo.material.opacity = 0.5 + Math.sin(t * 2) * 0.1;
     });
-    this.hotspot(g, 'dive');
+    this.hotspot('dive', [1.1, 2.3, 1.6, -6.2, 1.15, 2.45]);
   }
 
   // ---------- ステージ ----------
@@ -695,7 +751,7 @@ class World {
     const g = new THREE.Group();
     this.scene.add(g);
     const sH = 0.7;
-    const front = this.mat('#111116', { roughness: 0.6, emissive: '#5f8bff', emissiveIntensity: 0 });
+    const front = this.mat('#111116', { emissive: '#5f8bff', emissiveIntensity: 0, unique: true });
     this.addHover('stage', front, 0, 0.22);
     this.box(11, sH, 3.4, front, 0, sH / 2, -7.2, g);
     this.box(11.1, 0.05, 3.5, this.mat('#3a2a20', { roughness: 0.5 }), 0, sH + 0.02, -7.2, g);
@@ -738,8 +794,9 @@ class World {
     screen.position.set(0, 2.45, -8.85);
     g.add(screen);
     this.box(6.6, 2.82, 0.08, this.mat('#08080b'), 0, 2.45, -8.92, g);
-    let last = 0;
-    this.anim.push(t => { if (t - last > 0.12) { last = t; drawScreen(t); } });
+    // 文字は描き直さず（毎回の転送が重い）、色味だけゆっくり変える
+    const tintA = new THREE.Color('#ffffff'), tintB = new THREE.Color('#b9c8ff');
+    this.anim.push(t => { screen.material.color.lerpColors(tintA, tintB, Math.sin(t * 0.8) * 0.5 + 0.5); });
 
     // スピーカー
     const spk = this.mat('#15151a', { roughness: 0.7 });
@@ -747,7 +804,7 @@ class World {
     [-6.3, 6.3].forEach(x => {
       this.box(1.1, 2.4, 0.9, spk, x, 1.2, -6.4, g);
       [0.6, 1.3, 1.95].forEach((y, i) => {
-        const c = new THREE.Mesh(new THREE.CylinderGeometry(i === 2 ? 0.16 : 0.32, i === 2 ? 0.16 : 0.32, 0.04, 24), cone);
+        const c = new THREE.Mesh(new THREE.CylinderGeometry(i === 2 ? 0.16 : 0.32, i === 2 ? 0.16 : 0.32, 0.04, 16), cone);
         c.rotation.x = Math.PI / 2; c.position.set(x, y, -5.94); g.add(c);
       });
     });
@@ -761,7 +818,7 @@ class World {
     const shell = this.mat('#c0392b', { roughness: 0.35, metalness: 0.2 });
     const head = this.mat('#f2efe6', { roughness: 0.6 });
     const brass = this.mat('#d4a73a', { metalness: 0.9, roughness: 0.3 });
-    const kick = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.4, 28), shell);
+    const kick = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.4, 18), shell);
     kick.rotation.x = Math.PI / 2; kick.position.set(0, sH + 0.42, -7.7); g.add(kick);
     const kickHead = new THREE.Mesh(new THREE.CircleGeometry(0.4, 28), head);
     kickHead.position.set(0, sH + 0.42, -7.49); g.add(kickHead);
@@ -780,7 +837,7 @@ class World {
     const metal = this.mat('#9aa3ad', { metalness: 0.85, roughness: 0.3 });
     this.cyl(0.015, 0.015, 1.5, metal, 0, sH + 0.75, -6.1, g, 8);
     this.cyl(0.2, 0.2, 0.02, metal, 0, sH + 0.01, -6.1, g, 16);
-    const mic = new THREE.Mesh(new THREE.SphereGeometry(0.055, 14, 10), this.mat('#3a3a40', { metalness: 0.6, roughness: 0.4 }));
+    const mic = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), this.mat('#3a3a40', { metalness: 0.6, roughness: 0.4 }));
     mic.position.set(0, sH + 1.55, -6.05); g.add(mic);
     // モニタースピーカー
     [-1.6, 1.6].forEach(x => {
@@ -789,7 +846,7 @@ class World {
     });
     // ギタースタンドとギター（ひとつ）
     const guitar = new THREE.Group();
-    const gb = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 12), this.mat('#2b6cb0', { roughness: 0.3, metalness: 0.2 }));
+    const gb = new THREE.Mesh(new THREE.SphereGeometry(0.2, 11, 7), this.mat('#2b6cb0', { roughness: 0.3, metalness: 0.2 }));
     gb.scale.set(1, 1.3, 0.3); guitar.add(gb);
     const neck = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.75, 0.03), this.mat('#6b4423'));
     neck.position.y = 0.55; guitar.add(neck);
@@ -813,7 +870,7 @@ class World {
       const coneGeo = new THREE.ConeGeometry(0.55, 3.2, 24, 1, true);
       coneGeo.translate(0, -1.6, 0);
       const beam = new THREE.Mesh(coneGeo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-      beam.position.set(x, 3.4, -6.0);
+      beam.position.set(x, 3.4, -6.0); beam.userData.keep = true;
       g.add(beam); beams.push(beam);
     });
     this.anim.push(t => {
@@ -826,23 +883,30 @@ class World {
 
     // ミラーボール
     this.cyl(0.01, 0.01, 0.5, this.mat('#888'), -3.0, 3.85, -2.6, this.scene, 4);
-    const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.32, 2), new THREE.MeshStandardMaterial({ color: '#e8eef5', metalness: 0.6, roughness: 0.15, flatShading: true, emissive: '#5a6b80', emissiveIntensity: 0.4 }));
-    ball.position.set(-3.0, 3.45, -2.6);
+    const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.32, 2), M({ color: '#e8eef5', metalness: 0.6, roughness: 0.15, flatShading: true, emissive: '#5a6b80', emissiveIntensity: 0.4 }));
+    ball.position.set(-3.0, 3.45, -2.6); ball.userData.keep = true;
     this.scene.add(ball);
     // 床に映る光の粒
-    const dots = new THREE.Group();
+    const dotPos = [], dotCol = [], col = new THREE.Color();
     for (let i = 0; i < 40; i++) {
-      const dot = new THREE.Mesh(new THREE.CircleGeometry(0.05 + Math.random() * 0.04, 10), new THREE.MeshBasicMaterial({ color: beamColors[i % beamColors.length], transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
       const a = Math.random() * Math.PI * 2, r = 0.8 + Math.random() * 3.6;
-      dot.position.set(Math.cos(a) * r, 0.04, Math.sin(a) * r * 0.7);
-      dot.rotation.x = -Math.PI / 2;
-      dots.add(dot);
+      const cx = Math.cos(a) * r, cz = Math.sin(a) * r * 0.7, rad = 0.05 + Math.random() * 0.04;
+      col.set(beamColors[i % beamColors.length]).multiplyScalar(0.55);
+      for (let k = 0; k < 8; k++) {
+        const a0 = k / 8 * Math.PI * 2, a1 = (k + 1) / 8 * Math.PI * 2;
+        dotPos.push(cx, 0.04, cz, cx + Math.cos(a1) * rad, 0.04, cz + Math.sin(a1) * rad, cx + Math.cos(a0) * rad, 0.04, cz + Math.sin(a0) * rad);
+        for (let v = 0; v < 3; v++) dotCol.push(col.r, col.g, col.b);
+      }
     }
-    dots.position.set(0, 0, -2.2);
+    const dotGeo = new THREE.BufferGeometry();
+    dotGeo.setAttribute('position', new THREE.Float32BufferAttribute(dotPos, 3));
+    dotGeo.setAttribute('color', new THREE.Float32BufferAttribute(dotCol, 3));
+    const dots = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    dots.position.set(0, 0, -2.2); dots.userData.keep = true;
     this.scene.add(dots);
     this.anim.push((t, dt) => { ball.rotation.y += dt * 0.6; dots.rotation.y += dt * 0.25; });
 
-    this.hotspot(g, 'stage');
+    this.hotspot('stage', [12, 4, 4, 0, 2, -7.1]);
   }
 
   // ---------- フロアのえびたち ----------
@@ -855,7 +919,6 @@ class World {
       s.position.set(x, 0, z);
       s.rotation.y = Math.PI + Math.atan2(x, -7 - z) * -0.6;
       this.scene.add(s);
-      this.hotspot(s, 'stage');
       this.anim.push(t => {
         s.position.y = Math.abs(Math.sin(t * 2.6 + i * 0.9)) * 0.08;
         s.userData.wave(t * 1.5 + i);
@@ -869,12 +932,12 @@ class World {
     [-0.45, 0.45].forEach(x => { const l = this.box(0.05, 1.5, 0.05, legM, x, 0.75, -0.08, easel); l.rotation.x = 0.08; });
     easel.position.set(3.6, 0, -0.6); easel.rotation.y = -0.35;
     this.scene.add(easel);
-    this.hotspot(easel, 'stage');
+    this.hotspot('stage', [8.5, 1.8, 5.0, 0, 0.9, -2.4]);
   }
 
   // ---------- 模型のまわりの深海（泡・プランクトン） ----------
   seaParticles() {
-    const n = 260;
+    const n = 160;
     const pos = new Float32Array(n * 3);
     const seed = new Float32Array(n);
     for (let i = 0; i < n; i++) {
@@ -886,35 +949,29 @@ class World {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     const pts = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.16, map: glowTex('#c6ef6e'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.7 }));
     this.scene.add(pts);
-    this.anim.push((t, dt) => {
-      const p = geo.attributes.position.array;
-      for (let i = 0; i < n; i++) {
-        p[i * 3 + 1] += dt * (0.25 + seed[i] * 0.4);
-        if (p[i * 3 + 1] > 18) p[i * 3 + 1] = -6;
-      }
-      geo.attributes.position.needsUpdate = true;
-    });
+    void seed;
+    this.anim.push((t, dt) => { pts.rotation.y += dt * 0.02; pts.position.y = Math.sin(t * 0.2) * 1.5; });
   }
 }
 
 // ---------- えび（立ち姿のマスコット） ----------
 function makeShrimp({ body = '#ff7a57', belly = '#ffc2a8', pearls = false, bowtie = false } = {}) {
   const g = new THREE.Group();
-  const shell = new THREE.MeshStandardMaterial({ color: body, roughness: 0.45, metalness: 0.05 });
-  const soft = new THREE.MeshStandardMaterial({ color: belly, roughness: 0.6 });
-  const black = new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.3 });
-  const white = new THREE.MeshStandardMaterial({ color: '#fff', roughness: 0.3 });
+  const shell = M({ color: body, roughness: 0.45, metalness: 0.05 });
+  const soft = M({ color: belly, roughness: 0.6 });
+  const black = M({ color: '#111', roughness: 0.3 });
+  const white = M({ color: '#fff', roughness: 0.3 });
 
   // 頭（上）から尾（下、うしろへ丸まる）へ
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 24, 18), shell);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 11), shell);
   head.scale.set(1, 1.15, 1); head.position.set(0, 1.25, 0); g.add(head);
-  const face = new THREE.Mesh(new THREE.SphereGeometry(0.28, 20, 14), soft);
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 8), soft);
   face.scale.set(0.9, 0.85, 0.5); face.position.set(0, 1.18, 0.2); g.add(face);
   // 目
   [-0.13, 0.13].forEach(x => {
     const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.18, 8), shell);
     stalk.position.set(x, 1.55, 0.1); stalk.rotation.z = x > 0 ? -0.35 : 0.35; g.add(stalk);
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 10), black);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), black);
     eye.position.set(x * 1.4, 1.64, 0.13); g.add(eye);
     const shine = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), white);
     shine.position.set(x * 1.4 + 0.02, 1.67, 0.2); g.add(shine);
@@ -926,22 +983,22 @@ function makeShrimp({ body = '#ff7a57', belly = '#ffc2a8', pearls = false, bowti
       new THREE.Vector3(sd * 0.08, 1.45, 0.25), new THREE.Vector3(sd * 0.35, 1.9, 0.3),
       new THREE.Vector3(sd * 0.7, 2.1, 0.0), new THREE.Vector3(sd * 0.95, 1.85, -0.3),
     ]);
-    const a = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.014, 5), shell);
-    g.add(a); antennae.push(a);
+    const a = new THREE.Mesh(new THREE.TubeGeometry(curve, 12, 0.014, 4), shell);
+    a.userData.keep = true; g.add(a); antennae.push(a);
   });
   // 胴の節（下へいくほど細く、うしろへ）
   const segs = [];
   const pts = [[0, 0.92, -0.02, 0.3], [0, 0.68, -0.08, 0.27], [0, 0.47, -0.17, 0.24], [0, 0.3, -0.3, 0.2], [0, 0.2, -0.46, 0.17]];
   pts.forEach(([x, y, z, r], i) => {
-    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), shell);
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 11, 7), shell);
     s.scale.set(1, 0.72, 0.95); s.position.set(x, y, z); s.rotation.x = -i * 0.25; g.add(s); segs.push(s);
-    const b = new THREE.Mesh(new THREE.SphereGeometry(r * 0.8, 14, 10), soft);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(r * 0.8, 8, 6), soft);
     b.scale.set(0.9, 0.6, 0.6); b.position.set(x, y, z + r * 0.45); g.add(b);
   });
   // 尾びれ
   const tail = new THREE.Group();
   [-0.5, 0, 0.5].forEach(a => {
-    const f = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8), shell);
+    const f = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), shell);
     f.scale.set(0.55, 0.18, 1.3); f.position.set(Math.sin(a) * 0.12, 0, -0.14); f.rotation.y = a; tail.add(f);
   });
   tail.position.set(0, 0.18, -0.62); tail.rotation.x = 0.4; g.add(tail);
@@ -956,23 +1013,23 @@ function makeShrimp({ body = '#ff7a57', belly = '#ffc2a8', pearls = false, bowti
     const arm = new THREE.Group();
     const a = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.4, 8), shell);
     a.position.y = -0.2; arm.add(a);
-    const claw = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), shell);
+    const claw = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), shell);
     claw.scale.set(1, 1.3, 0.7); claw.position.y = -0.42; arm.add(claw);
     arm.position.set(sd * 0.3, 1.0, 0.08);
     arm.rotation.z = sd * 0.5;
     g.add(arm); arms.push(arm);
   });
   if (pearls) {
-    const pm = new THREE.MeshStandardMaterial({ color: '#fbf6ee', roughness: 0.15, metalness: 0.3, emissive: '#6d665d', emissiveIntensity: 0.2 });
+    const pm = M({ color: '#fbf6ee', roughness: 0.15, metalness: 0.3, emissive: '#6d665d', emissiveIntensity: 0.2 });
     for (let i = 0; i < 14; i++) {
       const a = -Math.PI * 0.95 + (i / 13) * Math.PI * 0.9 + Math.PI * 0.5;
-      const p = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), pm);
+      const p = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), pm);
       p.position.set(Math.cos(a) * 0.3, 1.0 + Math.abs(Math.cos(a)) * 0.05 - 0.04, Math.sin(a) * 0.26 + 0.05);
       g.add(p);
     }
   }
   if (bowtie) {
-    const bm = new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.4 });
+    const bm = M({ color: '#111', roughness: 0.4 });
     [-1, 1].forEach(sd => {
       const w = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.15, 4), bm);
       w.rotation.z = sd * Math.PI / 2; w.position.set(sd * 0.075, 1.0, 0.3); g.add(w);
@@ -1015,7 +1072,7 @@ function textPlane(lines, o, pw, ph) {
     });
   });
   const transparent = !o.bg || o.bg.startsWith('rgba');
-  return new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), new THREE.MeshStandardMaterial({ map: tex, transparent, roughness: 0.8, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.18 }));
+  return new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), M({ map: tex, transparent, roughness: 0.8, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.18 }));
 }
 
 function neonPlane(text, color, pw, ph, size) {
