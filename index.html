@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>えびは</title>
-<meta name="description" content="えびは の作品置き場。3D模型のライブハウスを歩いて、ブラウザで遊べるゲーム「えびダイブ食堂」などへ。">
+<meta name="description" content="えびは の作品置き場。3D模型のギャラリーを歩いて、ブラウザで遊べるゲーム「えびダイブ食堂」などへ。">
 <meta property="og:type" content="profile">
 <meta property="og:site_name" content="えびは">
 <meta property="og:title" content="えびは">
-<meta property="og:description" content="えびは の作品置き場。3D模型のライブハウスを歩いて、ブラウザで遊べるゲーム「えびダイブ食堂」などへ。">
+<meta property="og:description" content="えびは の作品置き場。3D模型のギャラリーを歩いて、ブラウザで遊べるゲーム「えびダイブ食堂」などへ。">
 <meta property="og:url" content="https://ebihanohito.com/">
 <meta property="og:image" content="https://ebihanohito.com/avatar.png">
 <meta name="twitter:card" content="summary">
@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700&display=swap">
 <link rel="modulepreload" href="vendor/three.module.min.js">
 <style>
-  /* 3Dが使えるときは模型のライブハウス、使えないときは1枚のふつうのページ */
+  /* 3Dが使えるときは模型のギャラリー、使えないときは1枚のふつうのページ */
   :root {
     color-scheme: dark;
     --ground: #061820;
@@ -234,12 +234,12 @@
 </style>
 </head>
 <body class="booting">
-<canvas id="scene" aria-label="えびは LIVE HOUSE の3D模型。受付・バーカン・ステージを移動できます"></canvas>
+<canvas id="scene" aria-label="えびは GALLERY の3D模型。受付・バーカン・ステージを移動できます"></canvas>
 
 <header class="topbar">
   <a class="brand" href="#reception" data-go="reception">
     <img src="avatar.png" alt="" width="34" height="34">
-    <span><b>えびは</b><small>LIVE HOUSE</small></span>
+    <span><b>えびは</b><small>GALLERY</small></span>
     <span class="ticket-chip" aria-label="ドリンクチケット受け取り済み">1 DRINK</span>
   </a>
   <nav class="nav" aria-label="館内案内">
@@ -262,7 +262,7 @@
     <div class="profile-row">
       <img class="avatar" src="avatar.png" alt="えびは のアイコン（緑のえびに真珠のネックレス）" width="84" height="84">
       <div>
-        <p class="lead only3d">ようこそ、ライブハウスへ</p>
+        <p class="lead only3d">ようこそ、ギャラリーへ</p>
         <h1 class="name" id="name">えびは</h1>
       </div>
     </div>
@@ -397,7 +397,7 @@
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100219';
+  const ASSET_VERSION = '2026100220';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
