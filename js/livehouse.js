@@ -6,7 +6,7 @@ const FONT_DISPLAY = '"Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-seri
 const FONT_BODY = '"Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // 照明の演出（色の変化・ライトの首振り・ミラーボールの光・ネオンのまたたき）。false で全部止まる
-const LIGHT_FX = false;
+const FX = { light: false };
 
 // 軽量化：光の計算が安い Lambert に統一し、同じ見た目のマテリアルは1つを使い回す
 const matCache = new Map();
@@ -330,6 +330,7 @@ export async function start() {
 
   // ---------- ループ ----------
   let lastT = performance.now(), time = 0;
+  const dbg = { freeze: false, noOffset: false, noRender: false, fixedDpr: false, fps: 0 };
   const perf = { n: 0, sum: -1500, prev: performance.now() }; // 最初の1.5秒（読み込み直後）は数えない
   const tmpPos = new THREE.Vector3(), tmpTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3();
   const ease = {
@@ -367,18 +368,19 @@ export async function start() {
     tmpTarget.copy(cam.target);
     camera.position.copy(tmpPos);
     camera.lookAt(tmpTarget);
-    if (Math.abs(offset.x) > 0.5 || Math.abs(offset.y) > 0.5) camera.setViewOffset(W, H, offset.x, offset.y, W, H);
+    if (!dbg.noOffset && (Math.abs(offset.x) > 0.5 || Math.abs(offset.y) > 0.5)) camera.setViewOffset(W, H, offset.x, offset.y, W, H);
     else camera.clearViewOffset();
 
     // 2秒ごとに平均フレーム時間を見て、重ければ解像度を一段下げる
     perf.n++; perf.sum += Math.min(now - perf.prev, 100); perf.prev = now;
     if (perf.sum > 2000) {
       const avg = perf.sum / perf.n;
-      if (avg > 26 && dpr > 0.75 && !document.hidden) { dpr = Math.max(0.75, dpr - 0.25); renderer.setPixelRatio(dpr); resize(); }
+      dbg.fps = 1000 / avg;
+      if (avg > 26 && dpr > 0.75 && !document.hidden && !dbg.fixedDpr) { dpr = Math.max(0.75, dpr - 0.25); renderer.setPixelRatio(dpr); resize(); }
       perf.n = 0; perf.sum = 0;
     }
-    world.update(time, dt);
-    renderer.render(scene, camera);
+    if (!dbg.freeze) world.update(time, dt);
+    if (!dbg.noRender) renderer.render(scene, camera);
     placeMarkers();
     requestAnimationFrame(frame);
   }
@@ -394,6 +396,83 @@ export async function start() {
   if (reduceMotion) go(first, { instant: true, push: false });
   else setTimeout(() => go(first, { push: false }), 650);
   setTimeout(() => ui.hint.classList.add('done'), 9000);
+  if (new URLSearchParams(location.search).has('debug')) debugPanel({ renderer, scene, world, dbg, setDpr: v => { dpr = v; renderer.setPixelRatio(v); resize(); }, getDpr: () => dpr });
+}
+
+// ---------- 切り分け用パネル（?debug のときだけ） ----------
+function debugPanel({ renderer, scene, world, dbg, setDpr, getDpr }) {
+  const d = world.dbg, L = d.lights;
+  const vis = list => on => list.forEach(o => { if (o) o.visible = on; });
+  // 全マテリアルを「光の計算なし」に差し替える
+  const basicCache = new Map();
+  const setBasic = on => scene.traverse(o => {
+    if (!o.isMesh || Array.isArray(o.material) && !on && !o.userData.orig) return;
+    if (on) {
+      if (o.userData.orig) return;
+      o.userData.orig = o.material;
+      const conv = m => {
+        if (m.isMeshBasicMaterial) return m;
+        if (!basicCache.has(m)) basicCache.set(m, new THREE.MeshBasicMaterial({ color: m.color, map: m.map, transparent: m.transparent, opacity: m.opacity, side: m.side }));
+        return basicCache.get(m);
+      };
+      o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material);
+    } else if (o.userData.orig) { o.material = o.userData.orig; delete o.userData.orig; }
+  });
+  const items = [
+    ['light', '照明の演出（色・首振り・ミラーボール・ネオン）', false, on => { FX.light = on; }],
+    ['anim', 'えび・泡などの動き', true, on => { dbg.freeze = !on; }],
+    ['render', '3Dの描画（オフ＝最後の1枚で静止）', true, on => { dbg.noRender = !on; }],
+    ['dots', '床の光の粒', true, vis([d.dots])],
+    ['beams', 'スポットライトの光の筋', true, vis(d.beams || [])],
+    ['ball', 'ミラーボール', true, vis([d.ball])],
+    ['crowd', 'フロアのえびたち', true, vis(d.crowd)],
+    ['particles', '模型のまわりの粒', true, vis([d.particles])],
+    ['floor', '床（ホール・ロビー）', true, vis(d.floors)],
+    ['stageLight', 'ステージの点光源', true, vis([L.stage])],
+    ['pointLights', '受付・バーの点光源', true, vis([L.recep, L.bar])],
+    ['ambient', '環境光・太陽光', true, vis([L.hemi, L.key])],
+    ['lit', '光の計算（オフ＝全部単色）', true, on => setBasic(!on)],
+    ['tone', 'トーンマッピング', true, on => { renderer.toneMapping = on ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping; scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); }); }],
+    ['ui', 'パネル・目印・ぼかし', true, on => document.body.classList.toggle('dbg-noui', !on)],
+    ['offset', 'パネル分の画面ずらし', true, on => { dbg.noOffset = !on; }],
+    ['autoDpr', '解像度の自動調整（オフ＝1.0固定）', true, on => { dbg.fixedDpr = !on; if (!on) setDpr(1); }],
+  ];
+  const params = new URLSearchParams(location.search);
+  const off = new Set((params.get('off') || '').split(',').filter(Boolean));
+  const onSet = new Set((params.get('on') || '').split(',').filter(Boolean));
+  const box = document.createElement('div');
+  box.id = 'dbg';
+  box.innerHTML = '<b>切り分け</b><div class="dbg-stat"></div>';
+  const state = {};
+  for (const [key, label, def, fn] of items) {
+    const on = onSet.has(key) ? true : off.has(key) ? false : def;
+    state[key] = on;
+    const row = document.createElement('label');
+    row.innerHTML = `<input type="checkbox" ${on ? 'checked' : ''}> ${label}`;
+    const cb = row.querySelector('input');
+    cb.addEventListener('change', () => { state[key] = cb.checked; fn(cb.checked); save(); });
+    box.appendChild(row);
+    if (on !== def) fn(on);
+  }
+  const reset = document.createElement('button');
+  reset.textContent = 'すべて初期状態に';
+  reset.onclick = () => { location.search = '?debug'; };
+  box.appendChild(reset);
+  document.body.appendChild(box);
+  function save() {
+    const q = new URLSearchParams('debug');
+    const offs = items.filter(([k, , def]) => def && !state[k]).map(([k]) => k);
+    const ons = items.filter(([k, , def]) => !def && state[k]).map(([k]) => k);
+    let str = '?debug';
+    if (offs.length) str += '&off=' + offs.join(',');
+    if (ons.length) str += '&on=' + ons.join(',');
+    void q;
+    history.replaceState(history.state, '', str + location.hash);
+  }
+  const stat = box.querySelector('.dbg-stat');
+  setInterval(() => {
+    stat.textContent = `fps ${dbg.fps.toFixed(0)} ・ 解像度 ${getDpr()} ・ 描画命令 ${renderer.info.render.calls}`;
+  }, 500);
 }
 
 // =====================================================================
@@ -405,6 +484,7 @@ class World {
     this.hotspots = [];
     this.anim = [];       // 毎フレーム呼ぶ関数
     this.hoverables = {}; // go名 → 光らせるマテリアル
+    this.dbg = { crowd: [], floors: [] }; // デバッグ用の参照
     this.tankFront = new THREE.Vector3(-5.78, 1.5, 2.45);
   }
 
@@ -465,8 +545,10 @@ class World {
     // ステージは1灯で色を回す
     const stage = new THREE.PointLight('#ff5fa8', 26, 13, 1.4); stage.position.set(0, 3.6, -5.6); s.add(stage);
     const pink = new THREE.Color('#ff5fa8'), blue = new THREE.Color('#5f8bff');
-    if (LIGHT_FX) this.anim.push(t => { stage.color.lerpColors(pink, blue, Math.sin(t * 0.9) * 0.5 + 0.5); });
-    else stage.color.lerpColors(pink, blue, 0.5);
+    this.anim.push(t => FX.light && (() => { stage.color.lerpColors(pink, blue, Math.sin(t * 0.9) * 0.5 + 0.5); })());
+    stage.color.lerpColors(pink, blue, 0.5);
+    const hemi = s.children.find(o => o.isHemisphereLight);
+    this.dbg.lights = { hemi, key, recep, bar, stage };
   }
 
   // ---------- 台座・床・壁 ----------
@@ -485,7 +567,8 @@ class World {
     s.add(plate);
 
     // ホールの床（コンクリート）と、ロビーの市松
-    this.box(16, 0.32, 12.2, this.mat('#2b2b33'), 0, -0.14, -2.9);
+    const hall = this.box(16, 0.32, 12.2, this.mat('#2b2b33'), 0, -0.14, -2.9);
+    hall.userData.keep = true; this.dbg.floors.push(hall);
     const checker = canvasTex(512, 512, (g, w, h) => {
       const n = 8;
       for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { g.fillStyle = (i + j) % 2 ? '#e9e0cf' : '#2a2422'; g.fillRect(i * w / n, j * h / n, w / n, h / n); }
@@ -493,6 +576,7 @@ class World {
     checker.wrapS = checker.wrapT = THREE.RepeatWrapping; checker.repeat.set(4, 1.5);
     const lobby = new THREE.Mesh(new THREE.BoxGeometry(16, 0.32, 5.55), this.mat('#ffffff', { map: checker }));
     lobby.position.set(0, -0.14, 5.975);
+    lobby.userData.keep = true; this.dbg.floors.push(lobby);
     s.add(lobby);
 
     // 壁：奥と左だけ高く、手前と右は低い縁（ドールハウスの切り口）
@@ -579,7 +663,7 @@ class World {
     sub.position.set(4.3, 1.75, 3.34);
     this.scene.add(sub);
     neon.material.opacity = 0.9;
-    if (LIGHT_FX) this.anim.push(t => { neon.material.opacity = 0.88 + Math.sin(t * 9) * 0.04 + (Math.sin(t * 0.9) > 0.97 ? -0.4 : 0); });
+    this.anim.push(t => FX.light && (() => { neon.material.opacity = 0.88 + Math.sin(t * 9) * 0.04 + (Math.sin(t * 0.9) > 0.97 ? -0.4 : 0); })());
 
     // 仕切りのポスター（えびダイブ食堂のサムネ）
     loader.load('ebi-dive/thumbnail.png', tex => {
@@ -745,7 +829,7 @@ class World {
         b.position.set(b.userData.x + Math.sin(t * 3 + b.userData.o * 9) * 0.02, y0 + 0.1 + u * (h - 0.25), b.userData.z);
       }
       weeds.forEach((s, i) => { s.rotation.x = Math.sin(t * 1.4 + i) * 0.12; });
-      if (LIGHT_FX) halo.material.opacity = 0.5 + Math.sin(t * 2) * 0.1;
+      if (FX.light) halo.material.opacity = 0.5 + Math.sin(t * 2) * 0.1;
     });
     this.hotspot('dive', [1.1, 2.3, 1.6, -6.2, 1.15, 2.45]);
   }
@@ -801,7 +885,7 @@ class World {
     this.box(6.6, 2.82, 0.08, this.mat('#08080b'), 0, 2.45, -8.92, g);
     // 文字は描き直さず（毎回の転送が重い）、色味だけゆっくり変える
     const tintA = new THREE.Color('#ffffff'), tintB = new THREE.Color('#b9c8ff');
-    if (LIGHT_FX) this.anim.push(t => { screen.material.color.lerpColors(tintA, tintB, Math.sin(t * 0.8) * 0.5 + 0.5); });
+    this.anim.push(t => FX.light && (() => { screen.material.color.lerpColors(tintA, tintB, Math.sin(t * 0.8) * 0.5 + 0.5); })());
 
     // スピーカー
     const spk = this.mat('#15151a', { roughness: 0.7 });
@@ -877,6 +961,7 @@ class World {
       const beam = new THREE.Mesh(coneGeo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
       beam.position.set(x, 3.4, -6.0); beam.userData.keep = true;
       g.add(beam); beams.push(beam);
+      this.dbg.beams = beams;
     });
     const moveBeams = t => {
       beams.forEach((b, i) => {
@@ -886,7 +971,7 @@ class World {
       });
     };
     moveBeams(0);
-    if (LIGHT_FX) this.anim.push(moveBeams);
+    this.anim.push(t => FX.light && moveBeams(t));
 
     // ミラーボール
     this.cyl(0.01, 0.01, 0.5, this.mat('#888'), -3.0, 3.85, -2.6, this.scene, 4);
@@ -911,7 +996,8 @@ class World {
     const dots = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
     dots.position.set(0, 0, -2.2); dots.userData.keep = true;
     this.scene.add(dots);
-    if (LIGHT_FX) this.anim.push((t, dt) => { ball.rotation.y += dt * 0.6; dots.rotation.y += dt * 0.25; });
+    this.anim.push((t, dt) => { if (FX.light) { ball.rotation.y += dt * 0.6; dots.rotation.y += dt * 0.25; } });
+    Object.assign(this.dbg, { dots, ball });
 
     this.hotspot('stage', [12, 4, 4, 0, 2, -7.1]);
   }
@@ -925,7 +1011,7 @@ class World {
       s.scale.setScalar(0.55 + (i % 3) * 0.05);
       s.position.set(x, 0, z);
       s.rotation.y = Math.PI + Math.atan2(x, -7 - z) * -0.6;
-      this.scene.add(s);
+      this.scene.add(s); this.dbg.crowd.push(s);
       this.anim.push(t => {
         s.position.y = Math.abs(Math.sin(t * 2.6 + i * 0.9)) * 0.08;
         s.userData.wave(t * 1.5 + i);
@@ -955,7 +1041,7 @@ class World {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     const pts = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.16, map: glowTex('#c6ef6e'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.7 }));
-    this.scene.add(pts);
+    this.scene.add(pts); this.dbg.particles = pts;
     void seed;
     this.anim.push((t, dt) => { pts.rotation.y += dt * 0.02; pts.position.y = Math.sin(t * 0.2) * 1.5; });
   }
