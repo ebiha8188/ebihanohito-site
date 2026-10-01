@@ -285,6 +285,8 @@
 <div id="dive" aria-hidden="true"><p>えびダイブ食堂へ</p></div>
 
 <script type="module">
+  // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
+  const ASSET_VERSION = '2026100205';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
@@ -294,7 +296,7 @@
     // 水槽にもぐる泡
     const dive = document.getElementById('dive');
     for (let i = 0; i < 14; i++) { const s = document.createElement('span'); s.style.left = (5 + Math.random() * 90) + '%'; s.style.animationDelay = (Math.random() * 1.2) + 's'; s.style.scale = String(0.6 + Math.random() * 1.4); dive.appendChild(s); }
-    import('./js/livehouse.js').then(m => m.start()).catch(err => {
+    import('./js/livehouse.js?v=' + ASSET_VERSION).then(m => m.start()).catch(err => {
       console.error(err);
       body.classList.remove('is3d');
       document.querySelectorAll('.panel').forEach(p => p.hidden = false);
