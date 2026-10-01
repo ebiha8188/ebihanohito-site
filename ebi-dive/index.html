@@ -1,0 +1,3299 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>えびダイブ食堂</title>
+<meta name="description" content="えびを操って60秒間プランクトンを食べよう。大きく育ったえびほど、豪華な料理になって出てくるブラウザゲーム。">
+<meta property="og:title" content="えびダイブ食堂">
+<meta property="og:description" content="えびを操って60秒間プランクトンを食べよう。大きく育ったえびほど、豪華な料理になって出てくるブラウザゲーム。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="えびダイブ食堂">
+<meta property="og:url" content="https://ebihanohito.com/ebi-dive/">
+<meta property="og:image" content="https://ebihanohito.com/ebi-dive/thumbnail.png">
+<meta property="og:image:width" content="1920">
+<meta property="og:image:height" content="1080">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="えびダイブ食堂">
+<meta name="twitter:description" content="えびを操って60秒間プランクトンを食べよう。大きく育ったえびほど、豪華な料理になって出てくるブラウザゲーム。">
+<meta name="twitter:image" content="https://ebihanohito.com/ebi-dive/thumbnail.png">
+<meta name="theme-color" content="#0b222c">
+<!-- ホーム画面に追加したとき、ブラウザのバーなしのアプリとして起動する -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="えびダイブ">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230f3a48'/%3E%3Cpath d='M44 22c-9-6-24-3-27 9-2 7 3 13 9 15l-5 7 9-4 1 5 3-6c9-1 15-9 13-17' fill='%23ff7a57'/%3E%3Ccircle cx='40' cy='26' r='2.6' fill='%23111'/%3E%3C/svg%3E">
+<style>
+  /* claude.ai の表示枠が用意していた最小限のリセットを自前で持つ */
+  [hidden] { display: none !important; }
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  img { max-width: 100%; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #0b222c;
+    --sea: #0f3a48;
+    --ink: #e4f2ef;
+    --muted: #88adac;
+    --line: #21505c;
+    --shrimp: #ff7a57;
+    --shrimp-deep: #e2502c;
+    --plankton: #c6ef6e;
+    --ticket: #eef4f1;
+    --ticket-ink: #142f38;
+    --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+    --body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  }
+  html, body { background: var(--ground); }
+  body { color: var(--ink); font-family: var(--body); font-weight: 500; font-size: 15px; line-height: 1.7; }
+  .wrap { max-width: 880px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 56px; display: grid; gap: 20px; }
+  header { display: grid; gap: 6px; }
+  .eyebrow { margin: 0; color: var(--plankton); font-size: 13px; letter-spacing: 0.12em; }
+  h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 48px); line-height: 1.15; letter-spacing: 0.02em; text-wrap: balance; }
+  h1 span { color: var(--shrimp); }
+  .lede { margin: 0; color: var(--muted); max-width: 38em; }
+
+  .stage { position: relative; display: grid; background: var(--sea); border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+  .stage > * { grid-area: 1 / 1; }
+  .stage { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  .stage input { -webkit-user-select: text; user-select: text; }
+  .dash-float { display: none; position: absolute; right: 3%; bottom: 17%; width: 72px; height: 72px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.7); background: rgba(255,122,87,0.55); color: #fff; font-family: var(--display); font-size: 15px; letter-spacing: 0.04em; touch-action: none; z-index: 2; }
+  .dash-float:active { background: rgba(255,122,87,0.9); transform: scale(0.94); }
+  .dash-float.cooling { opacity: 0.4; }
+  .stick { position: absolute; left: 3%; bottom: 6%; width: clamp(96px, 24vmin, 140px); aspect-ratio: 1; border-radius: 50%; background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.35); touch-action: none; z-index: 2; }
+  .stick-knob { position: absolute; left: 28%; top: 28%; width: 44%; height: 44%; border-radius: 50%; background: rgba(255,255,255,0.45); border: 2px solid rgba(255,255,255,0.75); pointer-events: none; }
+  .stick-mode .dash-float { bottom: 6%; width: clamp(80px, 20vmin, 110px); height: clamp(80px, 20vmin, 110px); background: rgba(255,122,87,0.4); }
+
+  .start-row { display: flex; justify-content: center; padding-block: 6px 2px; }
+  .btn.btn-start { font-size: clamp(19px, 3.6vw, 24px); letter-spacing: 0.15em; padding: 11px 44px 11px calc(44px + 0.15em); box-shadow: 0 5px 0 var(--shrimp-deep), 0 0 0 6px rgba(255,122,87,0.2); animation: start-glow 2.4s ease-in-out infinite; }
+  .btn.btn-start:active { box-shadow: 0 1px 0 var(--shrimp-deep), 0 0 0 6px rgba(255,122,87,0.2); }
+  @keyframes start-glow { 50% { box-shadow: 0 5px 0 var(--shrimp-deep), 0 0 0 12px rgba(255,122,87,0.08); } }
+  @media (prefers-reduced-motion: reduce) { .btn-start { animation: none; } }
+  .sub-actions { gap: 6px 14px; }
+  .title-actions { display: flex; gap: 10px 12px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  .ghost.small { font-size: 13px; padding: 7px 16px; }
+  .sound-panel { background: rgba(8,26,34,0.8); z-index: 3; }
+  .wd-card { width: min(440px, 100%); }
+  .wd-now { font-size: 12px; color: var(--muted); text-align: right; }
+  .wd-preview { width: 100%; max-width: 320px; aspect-ratio: 16 / 7; justify-self: center; border-radius: 10px; display: block; }
+  .wd-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--line); }
+  .wd-tabs button { flex: 1; border: 0; border-radius: 8px 8px 0 0; background: transparent; color: var(--muted); font: inherit; font-weight: 700; font-size: 14px; padding: 8px 10px; margin-bottom: -2px; border-bottom: 3px solid transparent; cursor: pointer; }
+  .wd-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--plankton); background: rgba(198,239,110,0.08); }
+  .wd-tabs button:focus-visible { outline: 3px solid var(--plankton); outline-offset: -3px; }
+  .wd-pane { display: grid; gap: 8px; justify-items: center; min-height: 116px; align-content: start; }
+  .wd-pane[hidden] { display: none; }
+  .wd-save { display: grid; justify-items: center; gap: 4px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .wd-save[hidden] { display: none; }
+  .wd-save .mode-hint { text-align: center; }
+  .wd-pane .mode-hint { margin: 0; text-align: center; }
+  .wd-pane b { color: var(--plankton); }
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); padding: 0; cursor: pointer; touch-action: manipulation; transition: transform 0.12s; }
+  .swatch:hover { transform: scale(1.1); }
+  .swatch.locked { filter: grayscale(1) brightness(0.55); cursor: not-allowed; border-style: dashed; }
+  .swatch.locked:hover { transform: none; }
+  .swatch[aria-pressed="true"] { outline: 3px solid var(--plankton); outline-offset: 2px; }
+  .swatch:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .hat-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 360px; }
+  .hat-tile { width: 52px; height: 42px; border-radius: 8px; border: 2px solid var(--line); background: rgba(8,30,40,0.75); padding: 0; color: var(--ink); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  .hat-tile canvas { width: 48px; height: 38px; display: block; margin: auto; }
+  .hat-tile[aria-pressed="true"] { border-color: var(--plankton); background: rgba(198,239,110,0.14); }
+  .hat-tile:disabled { cursor: not-allowed; opacity: 0.55; }
+  .hat-tile:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .zukan-btn { display: inline-grid; justify-items: center; gap: 0; background: transparent; border: 0; padding: 2px 6px; color: var(--ink); cursor: pointer; touch-action: manipulation; }
+  .zukan-btn svg { display: block; transition: transform 0.15s; }
+  .zukan-btn:hover svg { transform: translateY(-2px) rotate(-4deg); }
+  .zukan-btn:active svg { transform: scale(0.94); }
+  .zukan-btn:focus-visible { outline: 3px solid var(--plankton); outline-offset: 2px; border-radius: 10px; }
+  .zukan-label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+  .zukan-label b { color: var(--plankton); font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { .zukan-btn svg { transition: none; } }
+  .zukan-panel { position: absolute; inset: 0; overflow-y: auto; background: rgba(8,26,34,0.88); z-index: 3; place-items: start center; padding: 14px 12px; }
+  .zk-card { background: var(--sea); border: 1px solid var(--line); border-radius: 12px; padding: 16px; width: min(600px, 100%); display: grid; gap: 12px; text-align: left; }
+  .zk-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .zk-head h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 18px; letter-spacing: 0.08em; }
+  #zkCount { font-family: var(--display); color: var(--plankton); font-variant-numeric: tabular-nums; }
+  .zk-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .zk-grid button { width: 100%; min-height: 104px; display: grid; justify-items: center; align-content: start; gap: 4px; padding: 8px 4px; border-radius: 10px; border: 1px solid var(--line); background: rgba(8,30,40,0.6); color: var(--ink); font: inherit; font-size: 11.5px; font-weight: 700; line-height: 1.35; text-align: center; }
+  .zk-grid button.locked { color: var(--muted); font-weight: 500; letter-spacing: 0.15em; }
+  .zk-grid button[aria-pressed="true"] { border-color: var(--plankton); background: rgba(198,239,110,0.1); }
+  .zk-grid button:focus-visible { outline: 3px solid var(--plankton); outline-offset: 2px; }
+  .zk-grid canvas { width: 56px; height: 56px; }
+  .zk-detail { margin: 0; min-height: 3.2em; font-size: 13px; line-height: 1.6; color: var(--ink); }
+  .zk-detail b { color: #fff3b0; }
+  .zk-card .btn { justify-self: center; font-size: 15px; padding: 8px 26px; }
+  .treasure-note { color: #2f6f8a; }
+  .rank-btn { position: absolute; top: 48px; right: 10px; z-index: 2; display: grid; justify-items: center; gap: 1px; padding: 6px 8px 4px; border-radius: 10px; border: 1px solid var(--line); background: rgba(8,30,40,0.72); color: var(--ink); font: inherit; font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; touch-action: manipulation; }
+  .rank-btn svg { display: block; transition: transform 0.15s; }
+  .rank-btn:hover svg { transform: translateY(-2px); }
+  .rank-btn:focus-visible { outline: 3px solid var(--plankton); outline-offset: 2px; }
+  .rank-btn[hidden] { display: none; }
+  /* ホーム画面に追加の案内（iPhone / iPad のブラウザだけ） */
+  .a2hs { max-width: min(420px, 100%); display: grid; gap: 4px; justify-items: center; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(198,239,110,0.45); background: rgba(8,30,40,0.8); font-size: 12.5px; line-height: 1.6; text-align: center; }
+  .a2hs[hidden] { display: none; }
+  .a2hs p { margin: 0; }
+  .a2hs-lead { font-weight: 700; color: var(--plankton); }
+  .a2hs-steps { color: var(--ink); }
+  .a2hs-actions { display: flex; gap: 14px; }
+  .a2hs-link { font: inherit; font-size: 12px; font-weight: 700; color: var(--ink); background: none; border: 0; padding: 2px 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .a2hs-link:focus-visible { outline: 2px solid var(--plankton); outline-offset: 2px; }
+  /* シェア */
+  .share-card { width: min(440px, 100%); }
+  .share-card label { margin: 0 0 -8px; }
+  #shText { width: 100%; box-sizing: border-box; resize: none; font: inherit; font-size: 13px; line-height: 1.65; color: var(--ink); background: rgba(8,30,40,0.75); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  #shText:focus-visible { outline: 2px solid var(--plankton); outline-offset: 2px; }
+  .share-actions { display: flex; gap: 10px 12px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  .btn.share-x { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 16px; padding: 10px 24px; background: #000; color: #fff; box-shadow: 0 4px 0 #3a3a3a; }
+  .btn.share-x:active { box-shadow: 0 1px 0 #3a3a3a; }
+  .share-x svg { width: 16px; height: 16px; }
+  .ghost.share-copy { font-size: 14px; padding: 10px 20px; }
+  .share-msg { margin: -4px 0 0; text-align: center; min-height: 1.4em; color: var(--plankton); }
+  .ghost.share-close { justify-self: center; }
+  .ticket-share svg { width: 46px; height: 46px; }
+  .ticket-share .zukan-label { color: var(--ticket-ink); }
+  /* 作成者表示（ランキングボタンの上） */
+  .credit { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; align-items: center; gap: 7px; padding: 3px 3px 3px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(8,30,40,0.72); color: var(--ink); font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; }
+  .credit[hidden] { display: none; }
+  .credit-name { color: inherit; text-decoration: none; }
+  .credit-name:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .credit-name:focus-visible { outline: 2px solid var(--plankton); outline-offset: 2px; border-radius: 4px; }
+  .x-btn { width: 28px; height: 28px; border-radius: 50%; background: #000; color: #fff; display: grid; place-items: center; border: 1px solid rgba(255,255,255,0.25); transition: transform 0.12s; }
+  .x-btn svg { width: 14px; height: 14px; }
+  .x-btn:hover { transform: scale(1.08); }
+  .x-btn:focus-visible { outline: 3px solid var(--plankton); outline-offset: 2px; }
+  .snd-mute { display: none; }
+  .muted .snd-waves { display: none; }
+  .muted .snd-mute { display: inline; }
+  .wd-icon { position: relative; display: block; width: 62px; height: 62px; }
+  .wd-icon canvas { width: 62px; height: 62px; display: block; transition: transform 0.15s; }
+  .wd-hanger { position: absolute; top: -2px; right: -4px; width: 24px; height: 24px; }
+  .zukan-btn:hover .wd-icon canvas { transform: translateY(-2px) rotate(-4deg); }
+  @media (prefers-reduced-motion: reduce) { .wd-icon canvas { transition: none; } }
+  .rk-card { width: min(460px, 100%); }
+  .rk-card #rankList { max-width: none; }
+  .mn-detail { display: grid; grid-template-columns: minmax(0, 240px) 1fr; gap: 14px; align-items: center; background: var(--ticket); color: var(--ticket-ink); border-radius: 8px; padding: 12px; }
+  .mn-detail[hidden] { display: none; }
+  .mn-detail canvas { width: 100%; max-width: 240px; aspect-ratio: 8 / 5; display: block; }
+  .mn-text { display: grid; gap: 4px; }
+  .mn-text b { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: 1.3; }
+  .mn-text p { margin: 0; font-size: 13px; line-height: 1.6; color: #3d5a61; }
+  .mn-text .mn-cond { font-size: 12px; color: #5b7a80; }
+  .mn-grid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+  .mn-grid button { min-height: 112px; }
+  .mn-grid canvas { width: 96px; height: 60px; }
+  .mn-grid small { font-size: 10.5px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+  @media (max-width: 560px) { .mn-detail { grid-template-columns: 1fr; justify-items: center; text-align: center; } }
+  .sp-card { background: var(--sea); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; width: min(320px, 100%); display: grid; gap: 14px; text-align: left; }
+  .sp-card h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 18px; letter-spacing: 0.08em; }
+  .sp-card .btn { justify-self: center; font-size: 15px; padding: 8px 26px; }
+  .sp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 700; }
+  .sp-row.off { opacity: 0.45; }
+  .sp-row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--shrimp); }
+  #volOut { min-width: 2.2em; text-align: right; font-variant-numeric: tabular-nums; }
+  .switch { position: relative; width: 84px; height: 34px; border-radius: 999px; border: 2px solid var(--line); background: rgba(8,30,40,0.75); color: var(--muted); font-weight: 700; font-size: 13px; padding: 0 12px 0 34px; text-align: left; }
+  .switch::before { content: ""; position: absolute; left: 4px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; background: var(--muted); transition: transform 0.15s; }
+  .switch[aria-checked="true"] { background: var(--plankton); border-color: var(--plankton); color: #16300a; padding: 0 34px 0 12px; }
+  .switch[aria-checked="true"]::before { transform: translateX(46px); background: #fff; }
+  .switch:focus-visible { outline: 3px solid var(--plankton); outline-offset: 3px; }
+
+  .touch-only { display: none !important; }
+  .settings { gap: 6px; justify-items: center; }
+  .settings > span:first-child { font-size: 13px; opacity: 0.85; }
+  .seg { display: inline-flex; border: 2px solid var(--line); border-radius: 999px; background: rgba(8,30,40,0.75); padding: 3px; gap: 3px; }
+  .seg button { border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-weight: 700; font-size: 14px; padding: 6px 16px; touch-action: manipulation; }
+  .seg button[aria-pressed="true"] { background: var(--plankton); color: #16300a; }
+  .seg button:focus-visible { outline: 3px solid var(--plankton); outline-offset: 2px; }
+  .mode-hint { font-size: 12px; color: var(--muted); }
+  .settings.diff { display: grid; }
+  .seg button:disabled { opacity: 0.55; cursor: not-allowed; }
+  .seg button[data-diff="hard"][aria-pressed="true"] { background: var(--shrimp); color: #2a0d05; }
+  .unlock-note { margin: 0; font-family: var(--display); font-size: 14px; color: var(--shrimp-deep); }
+  .ticket-ghost { color: var(--ticket-ink); border-color: #9bb3b6; }
+  .ticket-ghost:active { background: #dfe9e6; color: var(--ticket-ink); }
+  .hard-tag { display: inline-block; margin-left: 6px; font-family: var(--display); font-size: 10px; letter-spacing: 0.08em; color: #2a0d05; background: var(--shrimp); border-radius: 4px; padding: 0 5px; vertical-align: 2px; }
+  @media (pointer: coarse) {
+    .dash-float { display: block; }
+    .touch-only { display: grid !important; }
+  }
+  #game { width: 100%; aspect-ratio: 8 / 5; align-self: center; display: block; touch-action: none; cursor: crosshair; }
+  .overlay { display: grid; place-items: center; align-content: center; gap: 10px; padding: 20px 16px; text-align: center; }
+  .overlay[hidden] { display: none !important; }
+  #titleCard { background: linear-gradient(180deg, rgba(11,34,44,0.15), rgba(11,34,44,0.55)); pointer-events: none; }
+  #titleCard > * { pointer-events: auto; }
+  .title-big { margin: 0 0 6px; font-family: var(--display); font-size: clamp(24px, 5.5vw, 42px); line-height: 1.2; text-shadow: 0 2px 0 rgba(0,0,0,0.3); }
+  #titleCard { gap: 14px; }
+
+  button { font: inherit; cursor: pointer; }
+  .btn { font-family: var(--display); font-size: 18px; letter-spacing: 0.08em; color: #2a0d05; background: var(--shrimp); border: 0; border-radius: 999px; padding: 10px 30px; box-shadow: 0 4px 0 var(--shrimp-deep); transition: transform 0.08s, box-shadow 0.08s; }
+  .btn:hover { filter: brightness(1.06); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--shrimp-deep); }
+  .ghost:focus-visible { outline: 3px solid var(--plankton); outline-offset: 3px; }
+  /* .btn は下に厚み（影）がある立体ボタンなので、枠は厚みまで含めて上下左右均等に囲む */
+  .btn { position: relative; }
+  .btn:focus-visible { outline: none; }
+  .btn:focus-visible::after { content: ""; position: absolute; inset: -6px -6px -10px -6px; border: 3px solid var(--plankton); border-radius: 999px; pointer-events: none; }
+  .btn.btn-start:focus-visible::after { inset: -6px -6px -11px -6px; }
+  .btn:active:focus-visible::after { inset: -6px -6px -7px -6px; }
+
+  #resultCard { background: rgba(8, 26, 34, 0.72); }
+  .ticket { background: var(--ticket); color: var(--ticket-ink); border-radius: 6px; padding: 18px 20px 20px; width: min(420px, 100%); display: grid; gap: 6px; justify-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.35); position: relative; }
+  .ticket::before, .ticket::after { content: ""; position: absolute; left: 0; right: 0; height: 8px; background: radial-gradient(circle at 6px 0, transparent 5px, var(--ticket) 5.5px) 0 0 / 12px 8px repeat-x; }
+  .ticket::before { top: -7px; transform: rotate(180deg); }
+  .ticket::after { bottom: -7px; }
+  .ticket-label { margin: 0; font-size: 12px; letter-spacing: 0.2em; color: #5b7a80; }
+  .reason { margin: 0; font-family: var(--display); font-size: 14px; color: var(--shrimp-deep); letter-spacing: 0.06em; }
+  #dish { width: 100%; max-width: 320px; aspect-ratio: 8 / 5; display: block; }
+  #dishName { margin: 0; font-family: var(--display); font-weight: 400; font-size: 26px; line-height: 1.25; text-wrap: balance; }
+  #dishBlurb { margin: 0; font-size: 14px; color: #3d5a61; text-wrap: pretty; }
+  .score-line { margin: 4px 0 0; display: flex; gap: 14px; align-items: baseline; justify-content: center; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  #finalScore { font-family: var(--display); font-size: 22px; }
+  #bestScore { font-size: 13px; color: #5b7a80; }
+  #nextHint { margin: 0 0 6px; font-size: 13px; color: #5b7a80; }
+  .new-badge { display: inline-block; font-size: 11px; letter-spacing: 0.1em; background: var(--shrimp); color: #2a0d05; border-radius: 4px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; }
+
+  .controls { display: flex; gap: 12px 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .controls p { margin: 0; color: var(--muted); font-size: 13px; }
+  kbd { font-family: var(--body); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0 6px; color: var(--ink); }
+  .ghost { font-family: var(--display); font-size: 15px; letter-spacing: 0.08em; color: var(--shrimp); background: transparent; border: 2px solid var(--shrimp); border-radius: 999px; padding: 8px 26px; touch-action: manipulation; user-select: none; }
+  .ghost:active { background: var(--shrimp); color: #2a0d05; }
+
+  .name-field { display: grid; gap: 4px; justify-items: center; }
+  .name-field label { font-size: 13px; color: var(--ink); opacity: 0.85; }
+  #nameInput { font: inherit; font-weight: 700; font-size: 16px; text-align: center; width: min(240px, 70vw); padding: 7px 12px; border-radius: 999px; border: 2px solid var(--line); background: rgba(8,30,40,0.75); color: var(--ink); }
+  #nameInput::placeholder { color: var(--muted); font-weight: 500; }
+  #nameInput:focus-visible { outline: none; border-color: var(--plankton); }
+  #rankStatus { margin: 0; font-size: 12px; color: #5b7a80; min-height: 1.2em; }
+
+  .boards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; border-top: 1px solid var(--line); padding-top: 18px; }
+  .rank { display: grid; gap: 10px; align-content: start; }
+  .rank h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: 0.1em; }
+  #rankList { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  #rankList li { display: grid; grid-template-columns: 2.2em 36px minmax(0, 1fr) auto; grid-template-rows: auto auto; gap: 0 10px; align-items: center; padding: 6px 8px; border-radius: 8px; }
+  #rankList .rk { grid-column: 1; grid-row: 1 / span 2; }
+  #rankList .ic { grid-column: 2; grid-row: 1 / span 2; width: 36px; height: 36px; display: block; }
+  #rankList .who { grid-column: 3; grid-row: 1; }
+  #rankList li.me { background: rgba(255,122,87,0.14); box-shadow: inset 0 0 0 1px rgba(255,122,87,0.5); }
+  #rankList .rk { font-family: var(--display); color: var(--muted); font-variant-numeric: tabular-nums; }
+  #rankList li:nth-child(1) .rk { color: #ffd35a; }
+  #rankList li:nth-child(2) .rk { color: #d6e2e4; }
+  #rankList li:nth-child(3) .rk { color: #e0a070; }
+  #rankList .who { font-weight: 700; overflow-wrap: anywhere; }
+  #rankList .dishn { grid-column: 3; grid-row: 2; font-size: 12px; color: var(--muted); line-height: 1.4; }
+  #rankList .sc { grid-row: 1 / span 2; grid-column: 4; font-family: var(--display); font-variant-numeric: tabular-nums; }
+  #rankList .sc small { font-family: var(--body); font-size: 11px; color: var(--muted); margin-left: 2px; }
+  .rank-note { margin: 0; color: var(--muted); font-size: 13px; }
+
+  .menu { display: grid; gap: 10px; align-content: start; }
+  .menu h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: 0.1em; }
+  .menu-meta { margin: 0; color: var(--muted); font-size: 13px; }
+  .note { margin: 6px 0 0; color: var(--muted); font-size: 13px; max-width: 40em; }
+
+  @media (max-width: 560px) {
+    .ticket { padding: 14px 14px 16px; }
+    #dishName { font-size: 21px; }
+    #dish { max-width: 240px; }
+  }
+
+  /* ポーズ */
+  .pause-btn { display: block; position: absolute; top: 2.2%; left: 1.4%; width: clamp(30px, 6.5%, 44px); aspect-ratio: 1; padding: 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.35); background: rgba(8,30,40,0.6); color: #e4f2ef; z-index: 2; cursor: pointer; touch-action: manipulation; }
+  .pause-btn svg { width: 62%; height: 62%; display: block; margin: auto; }
+  /* パソコンだけ、ポーズボタンの下にキーの案内を出す（タッチ端末では .pc-only で消える） */
+  .pause-key { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; padding: 1px 6px; border-radius: 4px; background: rgba(8,30,40,0.7); color: #e4f2ef; font-family: var(--body); font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; line-height: 1.5; white-space: nowrap; pointer-events: none; }
+  .pause-btn:focus-visible { outline: 3px solid var(--plankton); outline-offset: 2px; }
+  @media (pointer: coarse) { .pause-btn { display: block; } }
+  .pause-btn.fs-btn { display: block; } /* 全画面ボタンはパソコンにも出す（ポーズボタンはタッチ端末だけ） */
+  .pause-btn[hidden] { display: none; }
+  .pause-card { background: rgba(8,26,34,0.82); grid-template-rows: 1fr auto; align-content: stretch; gap: 12px; }
+  .pause-card[hidden] { display: none; }
+  .pz-center { align-self: center; display: grid; justify-items: center; gap: 16px; }
+  .pz-center .title-big { margin: 0; }
+  .pz-hint { margin: -6px 0 6px; }
+  .btn.pz-resume { font-size: 22px; padding: 13px 28px; width: min(280px, 80vw); }
+  .ghost.pz-wide { font-size: 16px; padding: 12px 24px; width: min(280px, 80vw); }
+  .pz-sub { display: flex; justify-content: center; gap: 18px; }
+  .pc-only { display: inline; }
+  @media (pointer: coarse) { .pc-only { display: none; } }
+
+  /* 全画面（本物の全画面 API でも、使えない端末でのページいっぱい表示でも同じ見た目にする） */
+  .fs-out { display: none; }
+  .is-full .fs-in { display: none; }
+  .is-full .fs-out { display: inline; }
+  .stage.is-full { position: fixed; inset: 0; z-index: 1000; width: auto; height: auto; border-radius: 0; box-shadow: none; background: #06161d;
+    grid-template-columns: 100%; grid-template-rows: 100%;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+  .stage.is-full #game { width: min(100%, 160vh); width: min(100%, calc(100dvh * 1.6)); justify-self: center; align-self: center; }
+  body.no-scroll { overflow: hidden; }
+  /* 全画面中は iPad の Safari が左上に「全画面終了（×）」を出すので、左上のボタンを下へずらす */
+  .stage.is-full .pause-btn { top: calc(env(safe-area-inset-top, 0px) + 64px); left: calc(env(safe-area-inset-left, 0px) + 12px); }
+  /* 全画面では画面の高さが固定されるので、はみ出す画面は中でスクロールできるようにする
+     （上下の auto 余白で、収まるときは中央寄せ・はみ出すときは先頭から表示） */
+  .stage.is-full > #titleCard, .stage.is-full > #resultCard, .stage.is-full > #pauseCard {
+    display: flex; flex-direction: column; align-items: center; overflow-y: auto; -webkit-overflow-scrolling: touch; pointer-events: auto; }
+  .stage.is-full > #titleCard > :first-child, .stage.is-full > #resultCard > :first-child { margin-top: auto; }
+  .stage.is-full > #titleCard > :last-child, .stage.is-full > #resultCard > :last-child { margin-bottom: auto; }
+  .stage.is-full > #pauseCard > .pz-center { margin-block: auto; }
+  .stage.is-full > #titleCard > .a2hs[hidden] + .title-big { margin-top: auto; }
+  .stage.is-full > [hidden] { display: none !important; }
+  @media (max-height: 520px) {
+    .stage.is-full .title-big { font-size: 22px; }
+    .stage.is-full > #titleCard { gap: 8px; padding-block: 10px; }
+  }
+
+  /* 重なり順を明示する。iPad の Safari は canvas を別レイヤーで描くことがあり、
+     並び順だけに頼るとゲーム画面（海の背景）がボタンの上に出てしまうため */
+  .stage { isolation: isolate; }
+  #game { position: relative; z-index: 0; }
+  #titleCard, #resultCard, #pauseCard { position: relative; z-index: 1; }
+  .sound-panel { position: relative; }
+  #titleCard, #resultCard, #pauseCard, .sound-panel, .zukan-panel, .rank-btn, .credit, .pause-btn, .fs-btn, .dash-float, .stick {
+    -webkit-transform: translateZ(0); transform: translateZ(0);
+  }
+</style>
+<script src="config.js"></script>
+<script>
+// 旧アドレス（ebiha8188.github.io/ebi-dive）からの引っ越し。
+// 旧サイトが #migrate=… にブラウザの記録を詰めて送ってくるので、ゲーム本体が読み込む前に取り込む。
+(function () {
+  var m = /^#migrate=([A-Za-z0-9_-]+)$/.exec(location.hash);
+  if (!m) return;
+  try {
+    var b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    var bin = atob(b64), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    var data = JSON.parse(new TextDecoder().decode(bytes));
+    Object.keys(data).forEach(function (k) {
+      var v = data[k];
+      if (!/^ebi-dive-[a-z0-9-]+$/.test(k) || typeof v !== 'string') return;
+      var cur = localStorage.getItem(k);
+      if (k === 'ebi-dive-v1' && cur) {
+        // 両方に記録があるときは、良い方をあわせる（ベストは高い方、図鑑・お品書きは両方の分）
+        var a = JSON.parse(cur), b = JSON.parse(v);
+        var union = function (x, y) { return Array.from(new Set([].concat(x || [], y || []))); };
+        a.best = Math.max(a.best || 0, b.best || 0);
+        a.got = union(a.got, b.got);
+        a.treasures = union(a.treasures, b.treasures);
+        a.hard = !!(a.hard || b.hard);
+        localStorage.setItem(k, JSON.stringify(a));
+      } else if (cur === null) {
+        localStorage.setItem(k, v); // まだ新サイトに無いものだけ入れる（ランキングの本人確認もここで引き継ぐ）
+      }
+    });
+  } catch (e) {}
+  history.replaceState(null, '', location.pathname + location.search);
+})();
+</script>
+</head>
+<body>
+
+<main class="wrap">
+  <header>
+    <p class="eyebrow">海で育てて、厨房へ。</p>
+    <h1>えびダイブ<span>食堂</span></h1>
+    <p class="lede">えびを操って60秒間、プランクトンをたくさん食べよう。大きく育ったえびほど、豪華な料理になって出てくる。釣り針と魚には気をつけて。</p>
+  </header>
+
+  <div class="stage">
+    <canvas id="game" aria-label="えびを操作するゲーム画面"></canvas>
+    <button id="dashFloat" class="dash-float" type="button" hidden>はねる</button>
+    <div id="stick" class="stick" hidden aria-hidden="true"><div class="stick-knob"></div></div>
+
+    <div id="titleCard" class="overlay">
+      <div id="a2hs" class="a2hs" hidden>
+        <p class="a2hs-lead" id="a2hsLead"></p>
+        <p class="a2hs-steps" id="a2hsSteps" hidden></p>
+        <div class="a2hs-actions">
+          <button id="a2hsHow" class="a2hs-link" type="button" aria-expanded="false" aria-controls="a2hsSteps">やり方</button>
+          <button id="a2hsClose" class="a2hs-link" type="button">閉じる</button>
+        </div>
+      </div>
+      <p class="title-big">今日のまかないは、<br>きみ次第。</p>
+      <div class="name-field">
+        <label for="nameInput">ランキングに載せる名前</label>
+        <input id="nameInput" type="text" maxlength="12" autocomplete="nickname" placeholder="名無しのえび">
+      </div>
+      <div class="settings diff" role="group" aria-labelledby="diffLabel">
+        <span id="diffLabel">難易度</span>
+        <div class="seg">
+          <button type="button" data-diff="normal" aria-pressed="true">ノーマル</button>
+          <button type="button" data-diff="hard" aria-pressed="false" id="hardBtn">ハード</button>
+        </div>
+        <span class="mode-hint" id="diffHint"></span>
+      </div>
+      <div class="settings touch-only" role="group" aria-labelledby="ctrlLabel">
+        <span id="ctrlLabel">操作方法</span>
+        <div class="seg">
+          <button type="button" data-mode="touch" aria-pressed="true">タッチ操作</button>
+          <button type="button" data-mode="stick" aria-pressed="false">スティック操作</button>
+        </div>
+        <span class="mode-hint" id="modeHint"></span>
+      </div>
+      <div class="start-row">
+        <button id="startBtn" class="btn btn-start" type="button">もぐる！</button>
+      </div>
+      <div class="title-actions sub-actions">
+        <button id="soundBtn" class="zukan-btn" type="button" aria-label="サウンド設定" title="サウンド設定">
+          <svg viewBox="0 0 64 64" width="62" height="62" aria-hidden="true">
+            <ellipse cx="32" cy="58" rx="20" ry="3" fill="rgba(0,0,0,0.3)"/>
+            <circle cx="32" cy="30" r="24" fill="#dff3e8" stroke="#a9d6bd" stroke-width="1.5"/>
+            <path d="M16 25h7.5l9.5-8.5v27l-9.5-8.5H16z" fill="#2b3a44" stroke="#2b3a44" stroke-width="1.5" stroke-linejoin="round"/>
+            <g class="snd-waves" fill="none" stroke="#ff7a57" stroke-width="3" stroke-linecap="round">
+              <path d="M38.5 24.5a8 8 0 0 1 0 11"/>
+              <path d="M43.5 19.5a15 15 0 0 1 0 21"/>
+            </g>
+            <g class="snd-mute" fill="none" stroke="#d6263b" stroke-width="3" stroke-linecap="round">
+              <path d="M38.5 24.5l10 11M48.5 24.5l-10 11"/>
+            </g>
+          </svg>
+          <span class="zukan-label">サウンド</span>
+        </button>
+        <button id="wardrobeBtn" class="zukan-btn" type="button" aria-label="着せかえ" title="着せかえ">
+          <span class="wd-icon">
+            <canvas id="wdIcon" aria-hidden="true"></canvas>
+            <svg class="wd-hanger" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="11.5" fill="#ffffff" stroke="#7a6a9a" stroke-width="1"/>
+              <path d="M10.2 7.4a1.9 1.9 0 1 1 1.9 1.9v1.6M12.1 10.9L5 15.6h14.2z" fill="none" stroke="#5d4f7c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="zukan-label">着せかえ</span>
+        </button>
+        <button id="zukanBtn" class="zukan-btn" type="button" aria-label="海の宝物図鑑" title="海の宝物図鑑">
+          <svg viewBox="0 0 64 64" width="62" height="62" aria-hidden="true">
+            <ellipse cx="32" cy="58" rx="20" ry="3" fill="rgba(0,0,0,0.3)"/>
+            <rect x="15" y="10" width="37" height="44" rx="3" fill="#efe4c6"/>
+            <path d="M47 13v38M50 14v36" stroke="#d6c79f" stroke-width="1"/>
+            <rect x="10" y="7" width="38" height="45" rx="4" fill="#9a3d28"/>
+            <rect x="10" y="7" width="7" height="45" rx="3" fill="#6e2a1b"/>
+            <path d="M17 13h31M17 46h31" stroke="#e0b340" stroke-width="1.2" opacity="0.7"/>
+            <path d="M44 7h4v4zM44 52h4v-4z" fill="#e0b340"/>
+            <circle cx="32.5" cy="26" r="10" fill="#6e2a1b" stroke="#e0b340" stroke-width="1.6"/>
+            <path d="M25.5 29a7 7 0 0 1 14 0z" fill="#f2c6c0"/>
+            <path d="M32.5 29l-4.5-5.5M32.5 29v-7M32.5 29l4.5-5.5" stroke="#c98a80" stroke-width="0.9"/>
+            <circle cx="32.5" cy="26.5" r="2.6" fill="#ffffff"/>
+            <rect x="22" y="39" width="21" height="4" rx="1" fill="#e0b340"/>
+            <path d="M38 50v10l2.5-2.2L43 60V50z" fill="#c6ef6e"/>
+          </svg>
+          <span class="zukan-label">宝物図鑑 <b id="zukanCount">0/10</b></span>
+        </button>
+        <button id="menuBtn" class="zukan-btn" type="button" aria-label="お品書き" title="お品書き">
+          <svg viewBox="0 0 64 64" width="62" height="62" aria-hidden="true">
+            <ellipse cx="32" cy="58" rx="20" ry="3" fill="rgba(0,0,0,0.3)"/>
+            <circle cx="32" cy="30" r="24" fill="#f4efe4"/>
+            <circle cx="32" cy="30" r="18.5" fill="none" stroke="#d9cfb8" stroke-width="1.5"/>
+            <g transform="rotate(45 32 30)">
+              <rect x="30.6" y="25" width="2.8" height="25" rx="1.4" fill="#8f9ba5"/>
+              <ellipse cx="32" cy="16" rx="5.6" ry="8.2" fill="#cfd7de" stroke="#8a96a0" stroke-width="1"/>
+              <ellipse cx="30.4" cy="14" rx="1.5" ry="3.4" fill="#ffffff" opacity="0.75"/>
+            </g>
+            <g transform="rotate(-45 32 30)">
+              <rect x="30.6" y="23" width="2.8" height="27" rx="1.4" fill="#8f9ba5"/>
+              <path d="M26.4 16.5Q26.4 24 32 24Q37.6 24 37.6 16.5Z" fill="#cfd7de" stroke="#8a96a0" stroke-width="1"/>
+              <rect x="26.4" y="6.5" width="1.5" height="11" rx="0.75" fill="#cfd7de"/>
+              <rect x="29.6" y="6.5" width="1.5" height="11" rx="0.75" fill="#cfd7de"/>
+              <rect x="32.9" y="6.5" width="1.5" height="11" rx="0.75" fill="#cfd7de"/>
+              <rect x="36.1" y="6.5" width="1.5" height="11" rx="0.75" fill="#cfd7de"/>
+            </g>
+          </svg>
+          <span class="zukan-label">お品書き <b id="menuBtnCount">0/13</b></span>
+        </button>
+        <button id="shareGameBtn" class="zukan-btn" type="button" aria-label="このゲームをシェア" title="このゲームをシェア">
+          <svg viewBox="0 0 64 64" width="62" height="62" aria-hidden="true">
+            <ellipse cx="32" cy="58" rx="20" ry="3" fill="rgba(0,0,0,0.3)"/>
+            <circle cx="32" cy="30" r="24" fill="#fff0c2" stroke="#e6c872" stroke-width="1.5"/>
+            <path d="M22.5 30L41.5 20.5M22.5 30L41.5 39.5" stroke="#2b3a44" stroke-width="3.2" stroke-linecap="round"/>
+            <circle cx="21.5" cy="30" r="6" fill="#ff7a57"/>
+            <circle cx="42.5" cy="20" r="5.6" fill="#2b3a44"/>
+            <circle cx="42.5" cy="40" r="5.6" fill="#2b3a44"/>
+          </svg>
+          <span class="zukan-label">シェア</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="wardrobePanel" class="overlay zukan-panel" hidden>
+      <div class="zk-card wd-card" role="dialog" aria-labelledby="wdTitle">
+        <div class="zk-head">
+          <h3 id="wdTitle">えびの着せかえ</h3>
+          <span class="wd-now" id="wdNow"></span>
+        </div>
+        <canvas id="wdPreview" class="wd-preview" aria-hidden="true"></canvas>
+        <div class="wd-tabs" role="tablist" aria-label="着せかえの種類">
+          <button type="button" role="tab" id="tabColor" aria-controls="paneColor" aria-selected="true">色</button>
+          <button type="button" role="tab" id="tabHat" aria-controls="paneHat" aria-selected="false" tabindex="-1">かぶりもの</button>
+        </div>
+        <div id="paneColor" role="tabpanel" aria-labelledby="tabColor" class="wd-pane">
+          <div class="swatches" id="skinSwatches"></div>
+          <p class="mode-hint">えびの色 <b id="skinName">通常</b></p>
+          <p class="mode-hint" id="skinHint"></p>
+        </div>
+        <div id="paneHat" role="tabpanel" aria-labelledby="tabHat" class="wd-pane" hidden>
+          <div class="hat-list" id="hatList"></div>
+          <p class="mode-hint"><b id="hatName">なし</b>　<span id="hatHint"></span></p>
+        </div>
+        <div class="wd-save" id="wdSaveRow" hidden>
+          <button id="wdSave" class="ghost small" type="button">アイコンを画像で保存</button>
+          <span class="mode-hint" id="wdSaveMsg" aria-live="polite">いまの色とかぶりもののアイコンを PNG（512×512）で保存</span>
+        </div>
+        <button id="wdClose" class="btn" type="button">閉じる</button>
+      </div>
+    </div>
+
+    <button id="fsBtn" class="pause-btn fs-btn" type="button" aria-label="ゲーム画面を全画面にする" title="全画面">
+      <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path class="fs-in" d="M3 7.5V3h4.5M12.5 3H17v4.5M17 12.5V17h-4.5M7.5 17H3v-4.5"/>
+        <path class="fs-out" d="M7.5 3v4.5H3M17 7.5h-4.5V3M12.5 17v-4.5H17M3 12.5h4.5V17"/>
+      </svg>
+    </button>
+
+    <button id="pauseBtn" class="pause-btn" type="button" aria-label="ポーズ（Esc または Q キー）" title="ポーズ（Esc / Q）" hidden>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4.5" y="3.5" width="3.6" height="13" rx="1.2" fill="currentColor"/><rect x="11.9" y="3.5" width="3.6" height="13" rx="1.2" fill="currentColor"/></svg>
+      <span class="pause-key pc-only" aria-hidden="true">Esc / Q</span>
+    </button>
+
+    <div id="pauseCard" class="overlay pause-card" hidden>
+      <div class="pz-center" role="dialog" aria-labelledby="pzHead">
+        <p class="title-big" id="pzHead">ひと休み</p>
+        <p class="mode-hint pz-hint">ポーズ中。<span class="pc-only">Esc キーか Q キーでも再開できます。</span></p>
+        <button id="pzResume" class="btn pz-resume" type="button">プレイを再開</button>
+        <button id="pzRetry" class="ghost small pz-wide" type="button">最初からリトライ</button>
+        <button id="pzQuit" class="ghost small pz-wide" type="button">タイトルに戻る</button>
+      </div>
+      <div class="pz-sub">
+        <button id="pzSound" class="zukan-btn" type="button" aria-label="サウンド設定" title="サウンド設定"><span class="zukan-label">サウンド</span></button>
+        <button id="pzZukan" class="zukan-btn" type="button" aria-label="海の宝物図鑑" title="海の宝物図鑑"><span class="zukan-label">宝物図鑑</span></button>
+      </div>
+    </div>
+
+    <div id="creditBox" class="credit">
+      <a class="credit-name" href="https://ebihanohito.com/" title="えびは のプロフィールと作品">作成者：えびは</a>
+      <a class="x-btn" href="https://x.com/Liebudo_ebiha" target="_blank" rel="noopener" aria-label="作成者 えびは の X（@Liebudo_ebiha）を開く" title="@Liebudo_ebiha">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+    </div>
+
+    <button id="rankBtn" class="rank-btn" type="button" aria-label="ランキング" title="ランキング">
+      <svg viewBox="0 0 48 40" width="40" height="34" aria-hidden="true">
+        <path d="M24 1.5l2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z" fill="#ffd35a"/>
+        <rect x="16" y="17" width="16" height="22" rx="2" fill="#e0b340"/>
+        <rect x="2" y="24" width="14" height="15" rx="2" fill="#c9d3dc"/>
+        <rect x="32" y="28" width="14" height="11" rx="2" fill="#d98a4e"/>
+        <text x="24" y="32" text-anchor="middle" font-size="10" font-weight="700" fill="#5a3e0a">1</text>
+        <text x="9" y="35" text-anchor="middle" font-size="8" font-weight="700" fill="#44515c">2</text>
+        <text x="39" y="37" text-anchor="middle" font-size="7" font-weight="700" fill="#5a2e10">3</text>
+      </svg>
+      <span>ランキング</span>
+    </button>
+
+    <div id="rankPanel" class="overlay zukan-panel" hidden>
+      <div class="zk-card rk-card" role="dialog" aria-labelledby="rankTitle">
+        <div class="zk-head">
+          <h3 id="rankTitle">ランキング</h3>
+          <span class="wd-now">上位10人</span>
+        </div>
+        <p class="rank-note" id="rankNote">ランキングを読み込んでいます…</p>
+        <ol id="rankList"></ol>
+        <button id="rkClose" class="btn" type="button">閉じる</button>
+      </div>
+    </div>
+
+    <div id="menuPanel" class="overlay zukan-panel" hidden>
+      <div class="zk-card" role="dialog" aria-labelledby="mnTitle">
+        <div class="zk-head">
+          <h3 id="mnTitle">お品書き</h3>
+          <span id="mnCount">0 / 13</span>
+        </div>
+        <div class="mn-detail" id="mnDetail" hidden>
+          <canvas id="mnBig" aria-hidden="true"></canvas>
+          <div class="mn-text">
+            <b id="mnName"></b>
+            <p id="mnBlurb"></p>
+            <p class="mn-cond" id="mnCond"></p>
+          </div>
+        </div>
+        <p class="zk-detail" id="mnEmpty">まだ一皿も完成していない。潜って、最初の一皿を作ろう。</p>
+        <ul id="mnGrid" class="zk-grid mn-grid"></ul>
+        <button id="mnClose" class="btn" type="button">閉じる</button>
+      </div>
+    </div>
+
+    <div id="zukanPanel" class="overlay zukan-panel" hidden>
+      <div class="zk-card" role="dialog" aria-labelledby="zkTitle">
+        <div class="zk-head">
+          <h3 id="zkTitle">海の宝物図鑑</h3>
+          <span id="zkCount">0 / 10</span>
+        </div>
+        <ul id="zkGrid" class="zk-grid"></ul>
+        <p id="zkDetail" class="zk-detail"></p>
+        <button id="zkClose" class="btn" type="button">閉じる</button>
+      </div>
+    </div>
+
+    <div id="sharePanel" class="overlay sound-panel" hidden>
+      <div class="sp-card share-card" role="dialog" aria-labelledby="shTitle">
+        <h3 id="shTitle">シェア</h3>
+        <label for="shText" class="mode-hint">投稿する文面</label>
+        <textarea id="shText" readonly rows="7"></textarea>
+        <div class="share-actions">
+          <a id="shX" class="btn share-x" href="https://x.com/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            X で投稿
+          </a>
+          <button id="shCopy" class="ghost small share-copy" type="button">文面をコピー</button>
+        </div>
+        <p class="mode-hint share-msg" id="shMsg" aria-live="polite"></p>
+        <button id="shClose" class="ghost small share-close" type="button">閉じる</button>
+      </div>
+    </div>
+
+    <div id="soundPanel" class="overlay sound-panel" hidden>
+      <div class="sp-card" role="dialog" aria-labelledby="spTitle">
+        <h3 id="spTitle">サウンド設定</h3>
+        <div class="sp-row">
+          <span>BGM</span>
+          <button id="bgmToggle" class="switch" type="button" role="switch" aria-checked="true" aria-label="BGM"><span>オン</span></button>
+        </div>
+        <div class="sp-row">
+          <label for="volRange">音量</label>
+          <input id="volRange" type="range" min="0" max="100" step="5" value="60">
+          <output id="volOut" for="volRange">60</output>
+        </div>
+        <button id="spClose" class="btn" type="button">閉じる</button>
+      </div>
+    </div>
+
+    <div id="resultCard" class="overlay" hidden>
+      <div class="ticket" role="dialog" aria-labelledby="dishName">
+        <p class="reason" id="reason">タイムアップ！</p>
+        <p class="ticket-label" id="ticketLabel">本日の一皿</p>
+        <canvas id="dish" aria-hidden="true"></canvas>
+        <h2 id="dishName">エビフライ</h2>
+        <p id="dishBlurb"></p>
+        <p class="score-line"><span id="finalScore">0 pt</span><span id="bestScore"></span></p>
+        <p id="nextHint"></p>
+        <p id="rankStatus" aria-live="polite"></p>
+        <p id="treasureNote" class="unlock-note treasure-note" hidden></p>
+        <p id="unlockNote" class="unlock-note" hidden>ハードモードが開放された！ タイトルで選べます</p>
+        <div class="title-actions">
+          <button id="againBtn" class="btn" type="button">もう一度もぐる！</button>
+          <button id="titleBtn" class="ghost small ticket-ghost" type="button">タイトルへ</button>
+          <button id="shareResultBtn" class="zukan-btn ticket-share" type="button" aria-label="結果をシェア" title="結果をシェア">
+            <span class="zukan-label">結果をシェア</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <p>パソコン：移動 <kbd>←↑↓→</kbd> / <kbd>WASD</kbd> / 左ドラッグ・はねる <kbd>右クリック</kbd>・ポーズ <kbd>Esc</kbd> / <kbd>Q</kbd>・全画面 <kbd>F</kbd><br>iPad・スマホ：スタート画面で「タッチ操作」と「スティック操作」を切り替えられる<br>　タッチ操作 … タップした場所へ泳ぐ（押したままなぞると追いかける）・ダブルタップ / 2本目の指 / 「はねる」ボタンではねる<br>　スティック操作 … 左下のスティックで移動・右下のボタンではねる</p>
+  </div>
+
+</main>
+
+<script>
+// 古い iPad の Safari（iPadOS 15 以前）には canvas の roundRect がないので補う。
+// ないまま呼ぶと描画ループが止まり、画面が固まって見える
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r = 0) {
+    let [tl, tr, br, bl] = Array.isArray(r)
+      ? (r.length >= 4 ? r : r.length === 2 ? [r[0], r[1], r[0], r[1]] : [r[0] || 0, r[0] || 0, r[0] || 0, r[0] || 0])
+      : [r, r, r, r];
+    const m = Math.min(Math.abs(w), Math.abs(h)) / 2;
+    [tl, tr, br, bl] = [tl, tr, br, bl].map(v => Math.min(Number(v) || 0, m));
+    this.moveTo(x + tl, y);
+    this.lineTo(x + w - tr, y); this.quadraticCurveTo(x + w, y, x + w, y + tr);
+    this.lineTo(x + w, y + h - br); this.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
+    this.lineTo(x + bl, y + h); this.quadraticCurveTo(x, y + h, x, y + h - bl);
+    this.lineTo(x, y + tl); this.quadraticCurveTo(x, y, x + tl, y);
+    this.closePath();
+  };
+}
+(() => {
+  const W = 800, H = 500, GAME_TIME = 60;
+  const RAINBOW_CHANCE = 0.010, POWER_TIME = 5;
+  // 12〜50秒の間、毎秒2.8%で抽選（計37回・1プレイ最大1回）→ どこかで当たる確率 1-(0.972^37) ≒ 65%
+  const TAI_CHANCE = 0.028, TAI_SIZE = 62;
+  const MAGURO_NORMAL = 0.02, MAGURO_HARD = 0.15;
+  const SCALE_POWER_TIME = 7, SCALE_PTS = 20; // ハードの鯛が落とす「鯛のウロコ」
+  const BOAT_NETS = 3, NET_SPEED = 210, NET_NEXT_AT = W * 0.5, GOLD_FOOD_PTS = 100;
+  const DISHES = [
+    { id: 'senbei',  min: 0,   name: 'えびせんべい',       blurb: 'まだ小さなえび。すりつぶして、ぱりっと香ばしいおせんべいに。' },
+    { id: 'kakiage', min: 20,  name: '桜えびのかき揚げ',   blurb: 'ほどよく育った小えびたちを、みんなまとめてサクサクに。' },
+    { id: 'fry',     min: 45,  name: 'エビフライ',         blurb: 'まっすぐ伸ばしてパン粉をまとう。洋食屋さんの看板メニュー。' },
+    { id: 'chili',   min: 75,  name: 'エビチリ',           blurb: 'ぷりっと弾む身に、甘辛い豆板醤ソースをたっぷりと。' },
+    { id: 'tendon',  min: 110, name: '特上えび天丼',       blurb: '丼からはみ出す大えび天。タレの染みたご飯までごちそう。' },
+    { id: 'ajillo',  min: 150, name: 'ガンバスのアヒージョ', br: 5, blurb: 'にんにくと唐辛子のオイルでぐつぐつ。バゲットが止まらない。' },
+    { id: 'ise',     min: 200, name: '伊勢えびの具足煮',   blurb: 'ついに海の王者へ。殻ごと豪快に煮つけた、お祝いの一皿。' },
+    { id: 'bisque',  min: 250, name: 'えびのビスク',       blurb: '殻まで煮出した濃厚スープ。荒れた海を生き抜いたえびの旨みがぎゅっと詰まっている。' },
+    { id: 'thermidor', min: 320, name: 'オマールえびのテルミドール', blurb: '殻ごと半分に割って、クリームソースとチーズでこんがり。フレンチの王道。' },
+    { id: 'funamori', min: 400, name: '竜宮の舟盛り',      blurb: '海の幸をまるごと盛った大きな船。乙姫さまも招きたくなる宴の主役。' },
+    { id: 'golden',  min: 500, name: '伝説の黄金エビフライ', blurb: '揚げたら衣が金色に輝いた。ハードな海を極めた者だけがたどり着く一皿。' },
+  ];
+  const BAD_DISH = { id: 'nitsuke', name: '鯛の煮付け', blurb: 'えびは鯛のおなかの中へ。代わりに厨房へ届いたのは、その鯛だった。甘辛く煮つけて、本日は閉店。' };
+  // 0.05%。1プレイで約200匹のプランクトンが出るので、1-(0.9995^200) ≒ 10%（約10プレイに1回）
+  const TREASURE_CHANCE = 0.0005;
+  const UNOWNED_TREASURE_WEIGHT = 3; // 未所持の宝物は、所持済みの3倍出やすい
+  const TREASURES = [
+    { id: 'bottle',  name: '手紙の入った瓶',        desc: 'コルクで封をされた小瓶。中の手紙はにじんでいて、「ずっと待ってる」とだけ読める。' },
+    { id: 'pendant', name: '思い出のペンダント',    desc: 'ロケットの中には色あせた二人の肖像。誰かの大切な記憶が、海の底で眠っていた。' },
+    { id: 'compass', name: '未来を示す金色のコンパス', desc: '針は北ではなく、持ち主が進むべき方角を指すという。えびが持つと、なぜか厨房を指す。' },
+    { id: 'pearl',   name: '光り輝く真珠',          desc: '暗い海の底でも自ら光る大粒の真珠。竜宮城の灯りだったのかもしれない。' },
+    { id: 'sword',   name: '英雄の剣',              desc: '嵐の海で船団を守り抜いた英雄の剣。長い年月を経ても、刃こぼれひとつない。' },
+    { id: 'shield',  name: '豪傑の盾',              desc: '大ダコの一撃を受け止めたと伝わる分厚い盾。傷の数だけ武勇伝がある。' },
+    { id: 'feather', name: '不死鳥の羽',            desc: '水の中でも消えない炎をまとった羽。触れるとほんのり温かい。' },
+    { id: 'crown',   name: '錆びた王冠',            desc: '沈んだ王国の王冠。錆びついても、宝石だけは輝きを失っていない。' },
+    { id: 'hook',    name: '船長のフック',          desc: '海賊船長の義手。先はいまも鋭く、えびにとっては見るだけで背筋が凍る。' },
+    { id: 'katana',  name: '呪いの刀',              desc: '抜いた者を海へ誘うという妖刀。えびが無事に拾えたのは、きっと運がよかっただけ。' },
+  ];
+  const BAD_NET = { id: 'bait', name: '釣り餌', blurb: '網にかかったものの、体が小さくて売り物にならなかった。釣り針の先で、次の大物を待つ身に。' };
+  const ALL_DISHES = [...DISHES, BAD_DISH, BAD_NET];
+  // 料理名を表示する。br がある料理はその位置で改行（例: ガンバスの／アヒージョ）
+  function setDishName(el, d) {
+    el.textContent = '';
+    if (d.br) el.append(d.name.slice(0, d.br), document.createElement('br'), d.name.slice(d.br));
+    else el.textContent = d.name;
+  }
+  const dishFor = s => { let d = DISHES[0]; for (const x of DISHES) if (s >= x.min) d = x; return d; };
+
+  // ---------- storage ----------
+  const KEY = 'ebi-dive-v1';
+  let save = { best: 0, got: [], treasures: [] };
+  try { const raw = localStorage.getItem(KEY); if (raw) save = Object.assign(save, JSON.parse(raw)); } catch (e) {}
+  if (!Array.isArray(save.treasures)) save.treasures = [];
+  const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} };
+
+  // ---------- difficulty ----------
+  const HARD_UNLOCK = 200, DIFF_KEY = 'ebi-dive-diff';
+  if (save.best >= HARD_UNLOCK) save.hard = true;
+  let diff = 'normal';
+  try { if (save.hard && localStorage.getItem(DIFF_KEY) === 'hard') diff = 'hard'; } catch (e) {}
+
+  // ---------- player name ----------
+  const NAME_KEY = 'ebi-dive-name', DEFAULT_NAME = '名無しのえび';
+  const nameInput = document.getElementById('nameInput');
+  try { nameInput.value = localStorage.getItem(NAME_KEY) || ''; } catch (e) {}
+  const cleanName = v => String(v || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 12);
+  const playerName = () => cleanName(nameInput.value) || DEFAULT_NAME;
+  nameInput.addEventListener('change', () => { try { localStorage.setItem(NAME_KEY, cleanName(nameInput.value)); } catch (e) {} });
+
+  // ---------- ranking (Supabase: 1人1件・自己ベスト) ----------
+  // 接続先は config.js の window.EBI_CONFIG。未設定ならランキングは「準備中」表示で、ゲームはそのまま遊べる
+  const MAX_SCORE = 2999;
+  const CFG = window.EBI_CONFIG || {};
+  const RANK = { ready: !!(CFG.supabaseUrl && CFG.supabaseAnonKey) };
+  // プレイヤーの身元はこのブラウザで作った ID と合言葉（合言葉はサーバーではハッシュでだけ保存）
+  const PLAYER_KEY = 'ebi-dive-player';
+  const randHex = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, b => b.toString(16).padStart(2, '0')).join(''); };
+  const newUuid = () => {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const h = randHex(16);
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${(8 + (parseInt(h[16], 16) & 3)).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+  };
+  let player = null;
+  try { player = JSON.parse(localStorage.getItem(PLAYER_KEY) || 'null'); } catch (e) {}
+  if (!player || !player.id || !player.secret) {
+    player = { id: newUuid(), secret: randHex(24) };
+    try { localStorage.setItem(PLAYER_KEY, JSON.stringify(player)); } catch (e) {}
+  }
+  const myId = player.id;
+  let lastRankRows = []; // 最後に読んだ上位10件（シェア文の「現在第○位」に使う）
+  const api = (path, opts = {}) => fetch(String(CFG.supabaseUrl).replace(/\/$/, '') + path, {
+    ...opts,
+    // apikey ヘッダーだけで匿名（anon）として扱われる。新しい publishable key でも旧 anon key でも動く
+    headers: { apikey: CFG.supabaseAnonKey, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+  });
+  const rankNote = document.getElementById('rankNote');
+  const rankList = document.getElementById('rankList');
+  const setRankNote = txt => { rankNote.textContent = txt; rankNote.hidden = !txt; };
+
+  function renderRanking(list) {
+    const rows = (Array.isArray(list) ? list : [])
+      .map(r => ({ ...r, id: r.player_id }))
+      .filter(r => typeof r.score === 'number' && isFinite(r.score) && r.score >= 0 && r.score <= MAX_SCORE)
+      .slice(0, 10);
+    lastRankRows = rows;
+    rankList.innerHTML = '';
+    setRankNote(rows.length ? '' : 'まだ誰も潜っていません。最初の一皿をどうぞ。');
+    rows.forEach((r, i) => {
+      const li = document.createElement('li');
+      if (r.id === myId) li.className = 'me';
+      const dish = ALL_DISHES.find(d => d.id === r.dish) || dishFor(r.score);
+      li.innerHTML = '<span class="rk"></span><canvas class="ic" aria-hidden="true"></canvas><span class="who"></span><span class="sc"></span><span class="dishn"></span>';
+      li.querySelector('.rk').textContent = i + 1;
+      // 自己ベストを出したときの色とかぶりもので、えびのアイコンを描く
+      const ic = li.querySelector('.ic'), S = 36;
+      ic.width = S * dpr; ic.height = S * dpr;
+      const icx = ic.getContext('2d');
+      icx.setTransform(dpr * S / 62, 0, 0, dpr * S / 62, 0, dpr * 1);
+      const rs = SKINS.some(k => k.id === r.skin) ? r.skin : 'normal';
+      const rh = HATS.some(h => h.id === r.hat) ? r.hat : 'none';
+      drawIconArt(icx, rs, rh);
+      const who = li.querySelector('.who');
+      who.textContent = (cleanName(r.name) || DEFAULT_NAME) + (r.id === myId ? '（あなた）' : '');
+      if (r.mode === 'hard') { const tag = document.createElement('span'); tag.className = 'hard-tag'; tag.textContent = 'HARD'; who.appendChild(tag); }
+      const sc = li.querySelector('.sc');
+      sc.textContent = Math.floor(r.score);
+      const u = document.createElement('small'); u.textContent = 'pt'; sc.appendChild(u);
+      li.querySelector('.dishn').textContent = dish.name;
+      rankList.appendChild(li);
+    });
+  }
+
+  async function refreshRanking() {
+    if (!RANK.ready) { setRankNote('ランキングは準備中です。'); return; }
+    try {
+      const q = cols => `/rest/v1/scores?select=${cols}&order=score.desc,updated_at.asc&limit=30`;
+      let res = await api(q('player_id,name,score,dish,mode,skin,hat'));
+      // 追加 SQL（skin / hat 列）をまだ実行していないデータベースでも表示できるようにする
+      if (!res.ok) res = await api(q('player_id,name,score,dish,mode'));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      renderRanking(await res.json());
+    } catch (e) {
+      setRankNote('ランキングを読み込めませんでした。通信状況を確かめて、もう一度開いてください。');
+    }
+  }
+  refreshRanking();
+  // ランキングを開いたときと、開いている間は 20 秒ごとに最新にする
+  document.getElementById('rankBtn').addEventListener('click', refreshRanking);
+  setInterval(() => { if (!document.getElementById('rankPanel').hidden) refreshRanking(); }, 20000);
+
+  async function submitScore(score, dishId, mode) {
+    if (!RANK.ready) return { kind: 'off' };
+    try {
+      const base = { p_player: myId, p_secret: player.secret, p_name: playerName(), p_score: Math.floor(score), p_dish: dishId, p_mode: mode };
+      const send = body => api('/rest/v1/rpc/submit_score', { method: 'POST', body: JSON.stringify(body) });
+      let res = await send({ ...base, p_skin: skin, p_hat: hat });
+      // 追加 SQL をまだ実行していないデータベースでは、色とかぶりものなしで登録する
+      if (res.status === 404 || res.status === 400) res = await send(base);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const r = await res.json();
+      await refreshRanking();
+      return r && r.kind === 'kept' ? { kind: 'kept', prev: r.prev } : { kind: 'best' };
+    } catch (e) {
+      return { kind: 'denied' };
+    }
+  }
+
+  // ---------- canvas ----------
+  const cv = document.getElementById('game');
+  const ctx = cv.getContext('2d');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const $ = id => document.getElementById(id);
+  const titleCard = $('titleCard'), resultCard = $('resultCard');
+  const reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const seeded = seed => { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+
+  // ---------- sound: Web Audio で合成する BGM ----------
+  const Sound = (() => {
+    const SKEY = 'ebi-dive-sound';
+    const settings = { on: true, vol: 0.6 };
+    try {
+      const s = JSON.parse(localStorage.getItem(SKEY) || 'null');
+      if (s) { settings.on = s.on !== false; if (typeof s.vol === 'number') settings.vol = clamp(s.vol, 0, 1); }
+    } catch (e) {}
+    let ac = null, master, delay, nbuf, out, cur = null, want = 'sea';
+    const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+
+    function env(g, t, dur, vol, attack, release) {
+      const hold = t + Math.max(attack, dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(vol, t + attack);
+      g.gain.setValueAtTime(vol, hold);
+      g.gain.exponentialRampToValueAtTime(0.0001, hold + release);
+    }
+    function tone(t, midi, dur, o = {}) {
+      const { type = 'triangle', vol = 0.1, attack = 0.01, release = 0.2, echo = false, filter = 0 } = o;
+      const osc = ac.createOscillator(); osc.type = type; osc.frequency.value = mtof(midi);
+      const g = ac.createGain(); env(g, t, dur, vol, attack, release);
+      let n = osc;
+      if (filter) { const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filter; osc.connect(f); n = f; }
+      n.connect(g); g.connect(out); if (echo) g.connect(delay);
+      osc.start(t); osc.stop(t + Math.max(attack, dur) + release + 0.05);
+    }
+    function noise(t, dur, o = {}) {
+      const { vol = 0.05, freq = 1000, type = 'lowpass', attack = 0.005, release = 0.05 } = o;
+      const s = ac.createBufferSource(); s.buffer = nbuf; s.loop = true;
+      const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq;
+      const g = ac.createGain(); env(g, t, dur, vol, attack, release);
+      s.connect(f); f.connect(g); g.connect(out);
+      s.start(t, Math.random() * 0.5); s.stop(t + Math.max(attack, dur) + release + 0.05);
+    }
+    function kick(t, vol = 0.25, f0 = 110) {
+      const o = ac.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.18);
+      const g = ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.35);
+    }
+
+    // 海: ゆったりした7thコードのパッド＋波の音＋ペンタトニックのきらめき
+    const SEA_CH = [[53, 57, 60, 64], [52, 55, 59, 62], [50, 53, 57, 60], [48, 52, 55, 62]];
+    const PENTA = [72, 74, 76, 79, 81, 84];
+    // 無敵: 速いアルペジオとビート
+    const POW_CH = [[72, 76, 79, 84], [71, 74, 79, 83], [69, 72, 76, 81], [69, 72, 77, 81]], POW_ROOT = [48, 43, 45, 41];
+    const ARP = [0, 1, 2, 3, 2, 1, 2, 3];
+    // 鯛: 低音の刻みと心臓の鼓動、三全音のスタブ
+    const TAI_BASS = [40, 40, 52, 40, 41, 40, 52, 40, 40, 40, 52, 40, 46, 45, 44, 43];
+    // バッドエンド: イ短調で下っていくメロディ（1回だけ再生）
+    const BAD_MEL = [[76, 2], [74, 2], [72, 2], [71, 2], [69, 4], [72, 2], [71, 2], [69, 2], [65, 2], [64, 4], [71, 4], [69, 8]];
+    const BAD_EV = {}; { let pos = 0; for (const [m, d] of BAD_MEL) { BAD_EV[pos] = [m, d]; pos += d; } }
+    const BAD_CH = [[57, 60, 64], [53, 57, 60], [50, 53, 57], [52, 56, 59], [45, 52, 57]];
+
+    const TRACKS = {
+      sea: { bpm: 72, spb: 2, step(i, t, sd) {
+        const ch = SEA_CH[Math.floor(i / 8) % 4];
+        if (i % 8 === 0) {
+          for (const m of ch) tone(t, m, sd * 8, { type: 'sine', vol: 0.045, attack: 1.2, release: 1.6 });
+          tone(t, ch[0] - 12, sd * 8, { type: 'sine', vol: 0.08, attack: 0.6, release: 1.2 });
+        }
+        if (i % 16 === 0) noise(t, sd * 6, { vol: 0.035, freq: 420, attack: sd * 4, release: sd * 6 });
+        if (Math.random() < (i % 2 ? 0.3 : 0.55)) tone(t, PENTA[Math.floor(Math.random() * PENTA.length)], 0.05, { vol: 0.05, release: 0.9, echo: true });
+      } },
+      power: { bpm: 152, spb: 4, step(i, t, sd) {
+        const bar = Math.floor(i / 16) % 4, ch = POW_CH[bar];
+        tone(t, ch[ARP[i % 8]] + (i % 16 >= 8 ? 12 : 0), sd * 0.6, { type: 'square', vol: 0.028, attack: 0.005, release: 0.06, filter: 3500, echo: i % 4 === 0 });
+        if (Math.random() < 0.18) tone(t, ch[Math.floor(Math.random() * 4)] + 24, 0.02, { type: 'sine', vol: 0.03, release: 0.35, echo: true });
+        if (i % 2 === 0) tone(t, POW_ROOT[bar] - 12 + (i % 4 === 2 ? 12 : 0), sd * 1.2, { vol: 0.13, attack: 0.005, release: 0.05 });
+        if (i % 4 === 0) kick(t, 0.22);
+        if (i % 4 === 2) noise(t, 0.02, { vol: 0.04, freq: 7000, type: 'highpass', release: 0.04 });
+        if (i % 8 === 4) noise(t, 0.05, { vol: 0.06, freq: 1800, type: 'bandpass', release: 0.1 });
+      } },
+      tai: { bpm: 132, spb: 4, step(i, t, sd) {
+        const s = i % 16, bar = Math.floor(i / 16);
+        tone(t, TAI_BASS[s], sd * 0.7, { type: 'sawtooth', vol: 0.07, attack: 0.005, release: 0.05, filter: 520 });
+        if (s === 0 || s === 3 || s === 8 || s === 11) kick(t, s % 8 === 0 ? 0.28 : 0.18, 80);
+        if (s === 0) for (const m of (bar % 2 ? [65, 71] : [64, 70])) tone(t, m, sd * 6, { type: 'sawtooth', vol: 0.03, attack: 0.02, release: 0.3, filter: 1600 });
+        tone(t, (bar % 2 ? 84 : 83) + (i % 2), sd * 0.9, { type: 'sine', vol: 0.012, attack: 0.005, release: 0.02 });
+      } },
+      bad: { bpm: 58, spb: 2, len: 40, step(i, t, sd) {
+        const e = BAD_EV[i];
+        if (e) tone(t, e[0], sd * e[1] * 0.9, { vol: 0.08, attack: 0.02, release: 0.8, echo: true });
+        if (i % 8 === 0) {
+          const ch = BAD_CH[i / 8], rel = i === 32 ? 3 : 1;
+          for (const m of ch) tone(t, m, sd * 8, { type: 'sine', vol: 0.05, attack: 0.4, release: rel });
+          tone(t, ch[0] - 12, sd * 8, { type: 'sine', vol: 0.07, attack: 0.2, release: rel });
+        }
+      } },
+    };
+
+    const level = () => settings.on ? settings.vol * 0.9 : 0;
+    function init() {
+      if (ac) return true;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      try { ac = new AC(); } catch (e) { return false; }
+      master = ac.createGain(); master.gain.value = level(); master.connect(ac.destination);
+      delay = ac.createDelay(1); delay.delayTime.value = 0.33;
+      const fb = ac.createGain(); fb.gain.value = 0.32;
+      const wet = ac.createGain(); wet.gain.value = 0.3;
+      delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
+      nbuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+      const d = nbuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      setInterval(tick, 30);
+      document.addEventListener('visibilitychange', () => { document.hidden ? ac.suspend() : ac.resume(); });
+      return true;
+    }
+    function tick() {
+      if (!cur || ac.state !== 'running') return;
+      const T = TRACKS[cur.name], sd = 60 / T.bpm / T.spb;
+      if (!settings.on) { cur.next = ac.currentTime + 0.05; return; }
+      out = cur.gain;
+      while (cur.next < ac.currentTime + 0.15) {
+        if (T.len != null && cur.step >= T.len) return;
+        if (cur.next < ac.currentTime) cur.next = ac.currentTime + 0.01;
+        T.step(cur.step, cur.next, sd);
+        cur.next += sd; cur.step++;
+      }
+    }
+    function play(name) {
+      want = name;
+      if (!ac || (cur && cur.name === name)) return;
+      const now = ac.currentTime;
+      if (cur) {
+        const g = cur.gain;
+        g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(g.gain.value, now);
+        g.gain.linearRampToValueAtTime(0.0001, now + 0.7);
+        setTimeout(() => g.disconnect(), 4000);
+      }
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(1, now + (name === 'bad' ? 0.1 : 0.7));
+      g.connect(master);
+      cur = { name, gain: g, next: now + 0.05, step: 0 };
+    }
+    function unlock() {
+      if (!init()) return;
+      if (ac.state === 'suspended') ac.resume();
+      play(want);
+    }
+    const save = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch (e) {} };
+    const apply = () => { if (ac) master.gain.setTargetAtTime(level(), ac.currentTime, 0.05); };
+    return {
+      settings, play, unlock,
+      setOn(v) { settings.on = v; apply(); save(); },
+      setVol(v) { settings.vol = clamp(v, 0, 1); apply(); save(); },
+    };
+  })();
+  ['pointerdown', 'touchend', 'click', 'keydown'].forEach(ev => addEventListener(ev, Sound.unlock, { passive: true }));
+
+  // ---------- skins ----------
+  const SKINS = [
+    { id: 'normal', name: '通常', body: '#ff9c80', shade: '#e0664a', light: '#ffd6c8' },
+    { id: 'blue',   name: '青',   body: '#5aa9f0', shade: '#2f6fb8', light: '#cfe6ff' },
+    { id: 'yellow', name: '黄色', body: '#f7e45c', shade: '#c7ad1f', light: '#fffbd0' },
+    { id: 'green',  name: '緑',   body: '#7fd46a', shade: '#3f9a3a', light: '#dcf7cf' },
+    // 黒は暗い海に溶けないよう、縞と触角を明るめのグレーにして目を白くする
+    { id: 'black',  name: '黒',   body: '#2a2530', shade: '#5f566e', light: '#948aa6', eye: '#f2ecff', glow: 'rgba(210,200,255,0.6)' },
+    { id: 'white',  name: '白',   body: '#f4f1ec', shade: '#c4bdb2', light: '#ffffff' },
+    // 開放条件つきの色
+    { id: 'gold',    name: '金色', body: '#f2c230', shade: '#a8780c', light: '#fff6c0', glow: 'rgba(255,215,110,0.55)', unlock: 'score' },
+    { id: 'rainbow', name: '虹色', body: '#ff9c80', shade: '#e0664a', light: '#ffd6c8', rainbow: true, unlock: 'treasures' },
+  ];
+  const GOLD_SKIN_SCORE = 500;
+  const SKIN_KEY = 'ebi-dive-skin';
+  const skinUnlocked = k => !k.unlock
+    || (k.unlock === 'score' && save.best >= GOLD_SKIN_SCORE)
+    || (k.unlock === 'treasures' && TREASURES.every(tr => save.treasures.includes(tr.id)));
+  const skinHint = k => k.unlock === 'score' ? `${GOLD_SKIN_SCORE}pt を達成すると開放` : '宝物をすべて集めると開放';
+  let skin = 'normal';
+  try { const v = localStorage.getItem(SKIN_KEY); const k = SKINS.find(s => s.id === v); if (k && skinUnlocked(k)) skin = v; } catch (e) {}
+
+  // ---------- かぶりもの（宝物で開放。見た目だけで当たり判定には影響しない） ----------
+  const HATS = [
+    { id: 'none',    name: 'なし' },
+    { id: 'wig',     name: '金髪の女性のカツラ',     from: 'bottle' },
+    { id: 'cowboy',  name: 'カウボーイハット',       from: 'pendant' },
+    { id: 'sailor',  name: '船員のセーラー帽子',     from: 'compass' },
+    { id: 'pearl',   name: '真珠のネックレスと口紅', from: 'pearl' },
+    { id: 'hero',    name: '勇者',                   from: 'sword' },
+    { id: 'armor',   name: '鎧',                     from: 'shield' },
+    { id: 'phoenix', name: 'フェニックスの羽',       from: 'feather' },
+    { id: 'king',    name: '王様',                   from: 'crown' },
+    { id: 'pirate',  name: '海賊帽子',               from: 'hook' },
+    { id: 'samurai', name: '侍の兜',                 from: 'katana' },
+  ];
+  const HAT_KEY = 'ebi-dive-hat';
+  const hatUnlocked = h => h.id === 'none' || save.treasures.includes(h.from);
+  let hat = 'none';
+  try { const v = localStorage.getItem(HAT_KEY); const h = HATS.find(x => x.id === v); if (h && hatUnlocked(h)) hat = v; } catch (e) {}
+
+  // えびの頭（甲羅の中心 ≒ (17,-1)、頭頂 ≒ y-9.5、目 (25,-6)）に合わせて描く
+  function drawHat(c, id, t) {
+    c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+    const gold = () => { const g = c.createLinearGradient(0, -17, 0, -8); g.addColorStop(0, '#fff0a8'); g.addColorStop(1, '#c9961e'); return g; };
+    switch (id) {
+      case 'wig': {
+        const g = c.createLinearGradient(0, -15, 0, 8);
+        g.addColorStop(0, '#fff0a0'); g.addColorStop(0.5, '#f2cc55'); g.addColorStop(1, '#d9a93a');
+        // 後ろ髪（濃いめ）→ 前髪つきの頭の髪（明るめ）の2層で、ふんわりした長い髪に
+        c.fillStyle = '#d9a93a';
+        c.beginPath(); c.moveTo(10, -10);
+        c.bezierCurveTo(3, -9, 0, -3, 0.5, 3);
+        c.quadraticCurveTo(-0.5, 7, 2.5, 9.5); c.quadraticCurveTo(4, 7, 5.5, 9); c.quadraticCurveTo(7, 6, 6.5, 2);
+        c.quadraticCurveTo(7, -4, 12, -7.5); c.closePath(); c.fill();
+        c.fillStyle = g;
+        c.beginPath(); c.moveTo(25, -6.5);
+        c.bezierCurveTo(25.5, -11.5, 20, -13.8, 14, -13);
+        c.bezierCurveTo(8, -12.2, 3.5, -8, 2.5, -2);
+        c.quadraticCurveTo(2, 2, 3.5, 5); c.quadraticCurveTo(5, 2.5, 5.5, -1);
+        c.quadraticCurveTo(7.5, -7, 13.5, -9);
+        c.quadraticCurveTo(19, -10.5, 22.5, -8.2);
+        c.quadraticCurveTo(23.5, -7, 25, -6.5); c.fill();
+        c.strokeStyle = 'rgba(255,250,220,0.85)'; c.lineWidth = 0.8;
+        c.beginPath(); c.moveTo(21, -11.8); c.quadraticCurveTo(11, -12, 5, -4); c.stroke();
+        c.strokeStyle = 'rgba(160,110,20,0.5)'; c.lineWidth = 0.6;
+        c.beginPath(); c.moveTo(17, -9.8); c.quadraticCurveTo(9, -8.5, 5, 0); c.stroke();
+        break;
+      }
+      case 'cowboy': {
+        c.fillStyle = '#8a5a2b';
+        c.beginPath(); c.moveTo(11.5, -10); c.lineTo(12.5, -16); c.quadraticCurveTo(17, -14.5, 21.5, -16); c.lineTo(22.5, -10); c.closePath(); c.fill();
+        c.fillStyle = '#3a2415'; c.fillRect(11.8, -12, 10.6, 1.8);
+        c.fillStyle = '#9c6a36';
+        c.beginPath(); c.moveTo(6, -11.5); c.quadraticCurveTo(8, -9, 17, -9.2); c.quadraticCurveTo(26, -9, 28, -11.5);
+        c.quadraticCurveTo(26, -7.8, 17, -7.8); c.quadraticCurveTo(8, -7.8, 6, -11.5); c.fill();
+        break;
+      }
+      case 'sailor': {
+        c.fillStyle = '#f7f9fb'; c.beginPath(); c.ellipse(17, -10, 8.5, 4.6, -0.08, Math.PI, 0); c.fill();
+        c.fillStyle = '#1f3a6e'; c.beginPath(); c.roundRect(8.7, -10.6, 16.6, 2.1, 1); c.fill();
+        c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(17, -8.4, 9.4, 1.5, -0.08, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = '#c9d3de'; c.lineWidth = 0.6; c.stroke();
+        c.strokeStyle = '#1f3a6e'; c.lineWidth = 1.1; const w = Math.sin(t * 4) * 1;
+        c.beginPath(); c.moveTo(9, -9.8); c.quadraticCurveTo(5, -9 + w, 3, -5.5 + w); c.moveTo(9, -9.3); c.quadraticCurveTo(6, -6.5 - w, 5, -3.5 - w); c.stroke();
+        break;
+      }
+      case 'pearl': {
+        c.strokeStyle = '#1b1414'; c.lineWidth = 0.8;
+        for (const [x1, y1, x2, y2] of [[23.3, -7.6, 21.8, -9.6], [24.8, -8.3, 24.6, -10.8], [26.3, -7.9, 27.4, -10.1]]) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); }
+        c.fillStyle = '#e8284a'; c.beginPath(); c.ellipse(28.4, 0.4, 2.2, 1.3, 0.1, 0, Math.PI * 2); c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.65)'; c.beginPath(); c.ellipse(27.9, 0, 0.8, 0.4, 0, 0, Math.PI * 2); c.fill();
+        for (const [x, y] of [[9, -7.5], [7.6, -5], [6.8, -2.3], [6.8, 0.5], [7.5, 3.2], [8.8, 5.6], [10.5, 7.4]]) {
+          c.fillStyle = '#f4f2f8'; c.beginPath(); c.arc(x, y, 1.35, 0, Math.PI * 2); c.fill();
+          c.fillStyle = '#ffffff'; c.beginPath(); c.arc(x - 0.4, y - 0.4, 0.45, 0, Math.PI * 2); c.fill();
+        }
+        break;
+      }
+      case 'hero': {
+        const w = Math.sin(t * 6) * 1.5;
+        c.strokeStyle = '#d6263b'; c.lineWidth = 1.6;
+        c.beginPath(); c.moveTo(9, -9); c.quadraticCurveTo(4, -12 + w, 0, -10 + w); c.moveTo(9, -8.5); c.quadraticCurveTo(5, -8 - w, 1, -5 - w); c.stroke();
+        c.strokeStyle = '#e0b340'; c.lineWidth = 1.8;
+        c.beginPath(); c.moveTo(9, -8.5); c.quadraticCurveTo(17, -12.5, 26, -8.8); c.stroke();
+        c.fillStyle = '#e0b340'; c.beginPath(); c.moveTo(19.5, -11); c.lineTo(23, -16); c.lineTo(22.6, -11.1); c.closePath(); c.fill();
+        c.fillStyle = '#3a8ae0'; c.beginPath(); c.arc(20.8, -10.9, 1.3, 0, Math.PI * 2); c.fill();
+        break;
+      }
+      case 'armor': {
+        c.save();
+        c.beginPath(); c.ellipse(17, -1, 12.4, 8.9, -0.08, 0, Math.PI * 2); c.clip();
+        const g = c.createLinearGradient(0, -10, 0, -2); g.addColorStop(0, '#f2f5f8'); g.addColorStop(1, '#8a97a2');
+        c.fillStyle = g; c.fillRect(3, -12, 28, 9);
+        c.restore();
+        c.strokeStyle = '#5d6872'; c.lineWidth = 0.8;
+        c.beginPath(); c.moveTo(5.5, -3); c.quadraticCurveTo(17, -4.5, 28.5, -3.3); c.stroke();
+        c.fillStyle = '#5d6872'; for (const x of [10, 17, 24]) { c.beginPath(); c.arc(x, -4.6, 0.7, 0, Math.PI * 2); c.fill(); }
+        c.fillStyle = '#b8c3cc'; c.beginPath(); c.ellipse(5.5, -2.5, 3.2, 5, 0.2, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = '#6f7a84'; c.lineWidth = 0.6; c.stroke();
+        break;
+      }
+      case 'phoenix': {
+        c.translate(14, -9); c.rotate(-0.9 + Math.sin(t * 3) * 0.06);
+        const g = c.createLinearGradient(0, 0, 0, -17);
+        g.addColorStop(0, '#c9241a'); g.addColorStop(0.5, '#ff7a1e'); g.addColorStop(1, '#ffe066');
+        c.fillStyle = g; c.beginPath(); c.moveTo(0, 0); c.bezierCurveTo(-4.5, -5, -3.5, -12, 0, -17); c.bezierCurveTo(3.5, -12, 4.5, -5, 0, 0); c.fill();
+        c.strokeStyle = '#fff2c0'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(0, 1); c.lineTo(0, -15); c.stroke();
+        break;
+      }
+      case 'king': {
+        c.fillStyle = '#b8202e'; c.beginPath(); c.ellipse(17, -10.5, 5.5, 3.4, 0, Math.PI, 0); c.fill();
+        c.fillStyle = gold();
+        c.beginPath(); c.moveTo(11, -8.8); c.lineTo(11, -14.5); c.lineTo(13.8, -11.5); c.lineTo(17, -16); c.lineTo(20.2, -11.5); c.lineTo(23, -14.5); c.lineTo(23, -8.8); c.closePath(); c.fill();
+        c.fillStyle = '#e0304a'; c.beginPath(); c.arc(17, -10.4, 1.1, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#fff3b0'; for (const [x, y] of [[11, -14.5], [17, -16], [23, -14.5]]) { c.beginPath(); c.arc(x, y, 0.8, 0, Math.PI * 2); c.fill(); }
+        break;
+      }
+      case 'pirate': {
+        c.fillStyle = '#1d1a1f';
+        c.beginPath(); c.moveTo(5, -9); c.quadraticCurveTo(17, -5.5, 29, -9.5); c.quadraticCurveTo(27, -13, 23.5, -12.5);
+        c.quadraticCurveTo(21, -18.5, 17, -18); c.quadraticCurveTo(12.5, -18.5, 10.5, -12.5); c.quadraticCurveTo(7, -13, 5, -9); c.fill();
+        c.strokeStyle = '#e0b340'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(5.5, -9.3); c.quadraticCurveTo(17, -6, 28.5, -9.7); c.stroke();
+        c.strokeStyle = '#f4f1ec'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(14.8, -10.4); c.lineTo(19.2, -12.4); c.moveTo(14.8, -12.4); c.lineTo(19.2, -10.4); c.stroke();
+        c.fillStyle = '#f4f1ec'; c.beginPath(); c.arc(17, -13.6, 1.8, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#1d1a1f'; c.beginPath(); c.arc(16.4, -13.8, 0.45, 0, Math.PI * 2); c.arc(17.6, -13.8, 0.45, 0, Math.PI * 2); c.fill();
+        break;
+      }
+      case 'samurai': {
+        c.fillStyle = '#2a2430';
+        c.beginPath(); c.moveTo(12, -9); c.quadraticCurveTo(6, -8, 3, -3); c.lineTo(6, -2.5); c.quadraticCurveTo(8, -6, 13, -6.5); c.closePath(); c.fill();
+        c.strokeStyle = '#b8322a'; c.lineWidth = 0.6;
+        c.beginPath(); c.moveTo(10.5, -8.4); c.quadraticCurveTo(6.5, -7, 4.6, -3.6); c.moveTo(11.8, -7.2); c.quadraticCurveTo(8.5, -5.8, 6.6, -3); c.stroke();
+        c.fillStyle = '#34303a'; c.beginPath(); c.ellipse(17.5, -9.3, 7.6, 5, -0.08, Math.PI, 0); c.fill();
+        c.strokeStyle = '#5a5466'; c.lineWidth = 0.5;
+        for (const x of [13, 16, 19, 22]) { c.beginPath(); c.moveTo(x, -9.5); c.lineTo(x + 0.4, -13.2); c.stroke(); }
+        c.fillStyle = '#1d1a22'; c.beginPath(); c.ellipse(18, -8.8, 8.6, 1.4, -0.08, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = '#e0b340'; c.lineWidth = 1.3;
+        c.beginPath(); c.moveTo(21.5, -12.5); c.quadraticCurveTo(21, -17, 18, -20); c.moveTo(21.5, -12.5); c.quadraticCurveTo(24.5, -16, 26, -20); c.stroke();
+        c.fillStyle = '#e0b340'; c.beginPath(); c.arc(21.5, -12.5, 1.2, 0, Math.PI * 2); c.fill();
+        break;
+      }
+    }
+    c.restore();
+  }
+
+  // ---------- drawing: shrimp ----------
+  function drawShrimp(c, x, y, s, dir, t, o = {}) {
+    const curl = o.curl || 0;
+    const pal = o.hue != null
+      ? { body: `hsl(${o.hue},90%,62%)`, shade: `hsl(${(o.hue + 50) % 360},85%,38%)`, light: `hsl(${o.hue},100%,88%)` }
+      : o.gold
+      ? { body: '#ffd35a', shade: '#d9a21c', light: '#fff0b0' }
+      : o.cooked
+        ? { body: '#ff5b2e', shade: '#c93a14', light: '#ffc3a6' }
+        : (() => {
+          const k = SKINS.find(s => s.id === o.skin) || SKINS[0];
+          if (!k.rainbow) return k;
+          // 虹色スキン: 時間でゆっくり色が流れ、節ごとに色相をずらす
+          const b = (t * 60) % 360;
+          return { rainbow: b, body: `hsl(${b},85%,66%)`, shade: `hsl(${(b + 40) % 360},80%,45%)`, light: `hsl(${b},100%,90%)` };
+        })();
+    c.save();
+    c.translate(x, y);
+    c.scale(dir * s, s);
+    c.lineCap = 'round';
+    if (pal.glow) { c.shadowColor = pal.glow; c.shadowBlur = 8; }
+    // antennae
+    c.strokeStyle = pal.shade; c.lineWidth = 1.2;
+    for (let k = 0; k < 2; k++) {
+      const w = Math.sin(t * 3 + k * 1.7) * 6;
+      c.beginPath(); c.moveTo(24, -4);
+      c.quadraticCurveTo(48, -20 - k * 6 + w, 74 + k * 10, -4 + w * 1.4 + k * 6);
+      c.stroke();
+    }
+    // legs
+    c.lineWidth = 1.6;
+    for (let i = 0; i < 5; i++) {
+      const lx = 20 - i * 6, sw = Math.sin(t * 14 + i * 0.9) * 3;
+      c.beginPath(); c.moveTo(lx, 6); c.lineTo(lx - 2 + sw, 14); c.stroke();
+    }
+    // abdomen segments (tail -> head)
+    const pts = [];
+    for (let i = 0; i < 6; i++) {
+      const a = i * (0.16 + curl * 0.42);
+      pts.push({ x: 6 - Math.sin(a) * 0 - i * 7 * Math.cos(a * 0.9), y: i * i * (0.35 + curl * 1.2) + Math.sin(a) * i * 2 * curl, r: 8 - i * 0.8, a });
+    }
+    const tail = pts[5];
+    // tail fan
+    c.fillStyle = pal.shade;
+    c.save(); c.translate(tail.x - 3, tail.y + 1); c.rotate(tail.a * 1.2);
+    for (let k = -1; k <= 1; k++) {
+      c.beginPath(); c.moveTo(0, 0);
+      c.lineTo(-13, k * 7 - 3); c.lineTo(-12, k * 7 + 3); c.closePath(); c.fill();
+    }
+    c.restore();
+    for (let i = 5; i >= 0; i--) {
+      const p = pts[i];
+      const rh = pal.rainbow != null ? (pal.rainbow + (i + 1) * 45) % 360 : null;
+      c.fillStyle = rh != null ? `hsl(${rh},80%,48%)` : (i % 2 ? pal.body : pal.shade);
+      c.beginPath(); c.ellipse(p.x, p.y, 5.2, p.r, p.a * 0.9, 0, Math.PI * 2); c.fill();
+      c.fillStyle = rh != null ? `hsl(${rh},90%,66%)` : pal.body;
+      c.beginPath(); c.ellipse(p.x + 0.8, p.y, 4.2, p.r - 0.8, p.a * 0.9, 0, Math.PI * 2); c.fill();
+    }
+    // carapace
+    c.fillStyle = pal.body;
+    c.beginPath(); c.ellipse(17, -1, 12, 8.5, -0.08, 0, Math.PI * 2); c.fill();
+    c.fillStyle = pal.light;
+    c.beginPath(); c.ellipse(15, -4, 7, 2.6, -0.1, 0, Math.PI * 2); c.fill();
+    // rostrum
+    c.fillStyle = pal.shade;
+    c.beginPath(); c.moveTo(25, -6); c.lineTo(37, -9); c.lineTo(26, -2); c.closePath(); c.fill();
+    // eye
+    c.fillStyle = pal.eye || '#1b1414';
+    c.beginPath(); c.arc(25, -6, 2.4, 0, Math.PI * 2); c.fill();
+    c.fillStyle = pal.eye ? '#1b1414' : '#fff';
+    c.beginPath(); c.arc(25.7, -6.7, 0.8, 0, Math.PI * 2); c.fill();
+    if (o.hat && o.hat !== 'none') drawHat(c, o.hat, t);
+    c.restore();
+  }
+
+  // ---------- drawing: world ----------
+  const weeds = Array.from({ length: 7 }, (_, i) => ({ x: 40 + i * 120 + rnd(-30, 30), h: rnd(50, 110), ph: rnd(0, 6), col: i % 2 ? '#1f7a5a' : '#2c8f64' }));
+  const bgBubbles = Array.from({ length: 22 }, () => ({ x: rnd(0, W), y: rnd(0, H), r: rnd(1.5, 4), v: rnd(15, 40) }));
+
+  function drawBackground(t, dt) {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#1d8095'); g.addColorStop(0.55, '#115266'); g.addColorStop(1, '#0a2c39');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // light rays
+    ctx.save(); ctx.globalAlpha = 0.07; ctx.fillStyle = '#e8ffff';
+    for (let i = 0; i < 5; i++) {
+      const x = 90 + i * 170 + Math.sin(t * 0.3 + i) * 20;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + 50, 0); ctx.lineTo(x - 30, H * 0.8); ctx.lineTo(x - 110, H * 0.8); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    // bubbles
+    ctx.strokeStyle = 'rgba(220,250,255,0.35)'; ctx.lineWidth = 1;
+    for (const b of bgBubbles) {
+      if (!reduced) { b.y -= b.v * dt; b.x += Math.sin(t + b.r) * 0.2; }
+      if (b.y < -10) { b.y = H + 10; b.x = rnd(0, W); }
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
+    }
+    // sand
+    ctx.fillStyle = '#c9b184';
+    ctx.beginPath(); ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 40) ctx.lineTo(x, H - 26 - Math.sin(x * 0.02) * 7);
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#b09a6e';
+    for (let i = 0; i < 30; i++) { ctx.fillRect((i * 97) % W, H - 12 - (i * 13) % 12, 3, 2); }
+    // seaweed
+    for (const w of weeds) {
+      ctx.strokeStyle = w.col; ctx.lineWidth = 7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(w.x, H - 20);
+      for (let k = 1; k <= 6; k++) {
+        const yy = H - 20 - (w.h / 6) * k;
+        ctx.lineTo(w.x + Math.sin(t * 1.3 + w.ph + k * 0.7) * k * 2.4, yy);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function drawHook(h) {
+    ctx.strokeStyle = 'rgba(230,240,240,0.7)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(h.x, 0); ctx.lineTo(h.x, h.y - 18); ctx.stroke();
+    // bait worm
+    ctx.strokeStyle = '#d98aa0'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(h.x, h.y - 16);
+    ctx.quadraticCurveTo(h.x + 9 + Math.sin(h.t * 6) * 3, h.y - 8, h.x + 2, h.y + 2); ctx.stroke();
+    // hook
+    ctx.strokeStyle = '#b8c4c8'; ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.moveTo(h.x, h.y - 20); ctx.lineTo(h.x, h.y + 4);
+    ctx.arc(h.x - 7, h.y + 4, 7, 0, Math.PI * 0.95); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(h.x - 14, h.y + 5); ctx.lineTo(h.x - 12, h.y - 3); ctx.lineTo(h.x - 9, h.y + 1); ctx.stroke();
+  }
+
+  function drawBoat(b, t) {
+    // 水中から見上げた船底
+    ctx.save(); ctx.translate(b.x, 8 + Math.sin(t * 1.5) * 2);
+    ctx.fillStyle = '#35271f';
+    ctx.beginPath(); ctx.moveTo(-130, -20); ctx.lineTo(130, -20);
+    ctx.quadraticCurveTo(122, 22, 70, 30); ctx.lineTo(-96, 30);
+    ctx.quadraticCurveTo(-126, 16, -130, -20); ctx.fill();
+    ctx.fillStyle = '#b8342a';
+    ctx.beginPath(); ctx.moveTo(-128, -6); ctx.lineTo(128, -6); ctx.lineTo(126, 2); ctx.lineTo(-127, 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#5a4a40';
+    ctx.fillRect(-112, 26, 5, 14);
+    ctx.save(); ctx.translate(-110, 44); ctx.rotate(t * 12);
+    ctx.fillStyle = '#8c8f86'; ctx.fillRect(-9, -2, 18, 4); ctx.fillRect(-2, -9, 4, 18);
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function drawNet(n, b, t) {
+    const bottom = n.st === 'drop' ? (H - 26) * Math.min(1, n.t / 0.8) : H - 26;
+    const [h0, h1] = holeRange(n.hole);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(235,225,195,0.75)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(b.x + 40, 36); ctx.lineTo(n.x, 0); ctx.stroke();
+    // 開いている穴をうっすら光らせる
+    if (bottom > h0) {
+      ctx.fillStyle = `rgba(198,239,110,${0.16 + 0.1 * Math.sin(t * 8)})`;
+      ctx.fillRect(n.x - 14, h0, 28, Math.min(bottom, h1) - h0);
+    }
+    ctx.beginPath();
+    ctx.rect(n.x - 13, 0, 26, Math.min(h0, bottom));
+    if (bottom > h1) ctx.rect(n.x - 13, h1, 26, bottom - h1);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(240,235,215,0.8)'; ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    for (let y = -24; y < bottom; y += 10) {
+      ctx.moveTo(n.x - 12, y); ctx.lineTo(n.x + 12, y + 24);
+      ctx.moveTo(n.x + 12, y); ctx.lineTo(n.x - 12, y + 24);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = '#d8cfae'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(n.x - 12, 0); ctx.lineTo(n.x - 12, bottom); ctx.moveTo(n.x + 12, 0); ctx.lineTo(n.x + 12, bottom); ctx.stroke();
+    ctx.restore();
+    // 穴のふち（浮き）
+    ctx.fillStyle = '#ff8a2a';
+    for (const y of [h0, h1]) if (bottom > y) { ctx.beginPath(); ctx.arc(n.x, y, 7, 0, Math.PI * 2); ctx.fill(); }
+    if (bottom >= H - 27) { ctx.fillStyle = '#6b6f73'; for (const dx of [-12, 12]) { ctx.beginPath(); ctx.arc(n.x + dx, bottom, 5, 0, Math.PI * 2); ctx.fill(); } }
+  }
+
+  function drawTaiScale(s, t) {
+    if (s.life < 2 && Math.floor(t * 10) % 2) return;
+    ctx.save(); ctx.translate(s.x, s.y + Math.sin(s.t * 2.5) * 4);
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, 32);
+    glow.addColorStop(0, 'rgba(255,190,205,0.7)'); glow.addColorStop(1, 'rgba(255,190,205,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, 32, 0, Math.PI * 2); ctx.fill();
+    ctx.rotate(Math.sin(s.t * 1.8) * 0.35);
+    // 扇形のウロコ。角度で色がうつろう
+    const shade = (t * 120) % 360;
+    const g = ctx.createLinearGradient(-14, -16, 14, 14);
+    g.addColorStop(0, `hsl(${(345 + shade * 0.1) % 360},90%,82%)`);
+    g.addColorStop(0.5, `hsl(${(shade + 190) % 360},70%,86%)`);
+    g.addColorStop(1, '#e8505a');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(0, 16);
+    ctx.quadraticCurveTo(-20, 2, -15, -10); ctx.quadraticCurveTo(0, -20, 15, -10); ctx.quadraticCurveTo(20, 2, 0, 16); ctx.fill();
+    ctx.strokeStyle = 'rgba(160,30,50,0.45)'; ctx.lineWidth = 1;
+    for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(0, 16, 10 + k * 7, -2.1, -1.04); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.ellipse(-6, -8, 5, 2, -0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawGoldFood(g, t) {
+    if (g.life < 2 && Math.floor(t * 10) % 2) return;
+    ctx.save(); ctx.translate(g.x, g.y + Math.sin(g.t * 3) * 3);
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, 30);
+    glow.addColorStop(0, 'rgba(255,225,110,0.7)'); glow.addColorStop(1, 'rgba(255,225,110,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill();
+    ctx.rotate(Math.sin(g.t * 2) * 0.3);
+    const body = ctx.createLinearGradient(0, -10, 0, 10);
+    body.addColorStop(0, '#fff2a8'); body.addColorStop(0.5, '#f2c230'); body.addColorStop(1, '#c98f14');
+    ctx.fillStyle = body; ctx.beginPath(); ctx.roundRect(-16, -9, 32, 18, 9); ctx.fill();
+    ctx.strokeStyle = 'rgba(150,100,10,0.6)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(0, 9); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.ellipse(-7, -4, 5, 2, -0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawWarn(f, t) {
+    if (Math.floor(t * 10) % 2) return;
+    const x = f.vx > 0 ? 26 : W - 26;
+    ctx.save();
+    ctx.fillStyle = 'rgba(226,60,60,0.85)';
+    ctx.beginPath(); ctx.arc(x, f.y, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '20px "Dela Gothic One", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', x, f.y + 1);
+    ctx.restore();
+  }
+
+  function drawMaguro(f, t) {
+    const s = f.size;
+    ctx.save(); ctx.translate(f.x, f.y); ctx.scale(Math.sign(f.vx), 1);
+    // speed lines
+    ctx.strokeStyle = 'rgba(220,250,255,0.35)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(-s * 2, i * s * 0.3); ctx.lineTo(-s * 3 - Math.abs(i) * 10, i * s * 0.3); ctx.stroke(); }
+    ctx.fillStyle = '#1f2f4f';
+    // crescent tail
+    ctx.save(); ctx.translate(-s * 1.3, 0); ctx.rotate(Math.sin(t * 18) * 0.2);
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-s * 0.25, -s * 0.3, -s * 0.5, -s * 0.75); ctx.quadraticCurveTo(-s * 0.25, 0, -s * 0.5, s * 0.75);
+    ctx.quadraticCurveTo(-s * 0.25, s * 0.3, 0, 0); ctx.fill();
+    ctx.restore();
+    // fins
+    ctx.beginPath(); ctx.moveTo(-s * 0.05, -s * 0.38); ctx.lineTo(-s * 0.35, -s * 0.85); ctx.lineTo(-s * 0.5, -s * 0.33); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-s * 0.3, s * 0.33); ctx.lineTo(-s * 0.5, s * 0.7); ctx.lineTo(-s * 0.62, s * 0.28); ctx.fill();
+    // torpedo body
+    const g = ctx.createLinearGradient(0, -s * 0.45, 0, s * 0.45);
+    g.addColorStop(0, '#1c2d52'); g.addColorStop(0.48, '#4f6c9a'); g.addColorStop(0.6, '#c9d6e2'); g.addColorStop(1, '#eef3f7');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(s * 1.25, 0);
+    ctx.bezierCurveTo(s * 0.8, -s * 0.6, -s * 0.9, -s * 0.48, -s * 1.35, 0);
+    ctx.bezierCurveTo(-s * 0.9, s * 0.48, s * 0.8, s * 0.6, s * 1.25, 0); ctx.fill();
+    // yellow finlets
+    ctx.fillStyle = '#f2c230';
+    for (let i = 0; i < 5; i++) {
+      const x = -s * 0.62 - i * s * 0.13, yy = s * 0.3 - i * s * 0.045;
+      for (const sg of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x, sg * yy); ctx.lineTo(x - s * 0.05, sg * (yy + s * 0.1)); ctx.lineTo(x - s * 0.1, sg * yy); ctx.fill(); }
+    }
+    // pectoral fin + eye
+    ctx.fillStyle = '#2a3d63';
+    ctx.beginPath(); ctx.moveTo(s * 0.45, s * 0.05); ctx.lineTo(-s * 0.15, s * 0.2); ctx.lineTo(s * 0.4, s * 0.16); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 0.85, -s * 0.08, s * 0.1, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(s * 0.87, -s * 0.08, s * 0.06, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFish(f, t) {
+    ctx.save(); ctx.translate(f.x, f.y); ctx.scale(Math.sign(f.vx), 1);
+    const s = f.size;
+    ctx.fillStyle = '#2e4a6b';
+    ctx.beginPath(); ctx.moveTo(-s * 0.9, 0);
+    ctx.lineTo(-s * 1.6, -s * 0.55 + Math.sin(t * 10) * 3); ctx.lineTo(-s * 1.6, s * 0.55 + Math.sin(t * 10) * 3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3f6690';
+    ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#9fc0dc';
+    ctx.beginPath(); ctx.ellipse(0, s * 0.22, s * 0.8, s * 0.3, 0, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 0.55, -s * 0.15, s * 0.17, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(s * 0.6, -s * 0.15, s * 0.09, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#1a2c40'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(s * 0.98, s * 0.08); ctx.lineTo(s * 0.7, s * 0.15); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawRainbow(p, t) {
+    const sc = Math.min(1, p.age * 4) * (p.life < 1.5 ? (Math.floor(t * 10) % 2 ? 1 : 0.6) : 1);
+    const hue = (t * 240 + p.ph * 60) % 360;
+    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(sc, sc);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 24);
+    g.addColorStop(0, `hsla(${hue},100%,85%,0.9)`); g.addColorStop(1, `hsla(${hue},100%,60%,0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI * 2); ctx.fill();
+    ctx.rotate(t * 2.4);
+    for (let k = 0; k < 6; k++) {
+      ctx.rotate(Math.PI / 3);
+      ctx.fillStyle = `hsl(${(hue + k * 60) % 360},100%,62%)`;
+      ctx.beginPath(); ctx.ellipse(8, 0, 6, 3, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  const TAI_SPOTS = [[0.1, -0.35], [0.3, -0.3], [-0.1, -0.28], [-0.3, -0.2], [0.05, -0.12], [-0.5, -0.08], [0.25, -0.1], [-0.2, 0.02]];
+  function drawTai(T, t) {
+    const s = T.size;
+    ctx.save(); ctx.translate(T.x, T.y); ctx.scale(T.dir, 1);
+    if (T.flash > 0 && Math.floor(t * 20) % 2 === 0) ctx.globalAlpha = 0.45;
+    // tail
+    ctx.fillStyle = '#c93a3a';
+    ctx.save(); ctx.translate(-s * 0.92, 0); ctx.rotate(Math.sin(t * 8) * 0.15);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-s * 0.55, -s * 0.5); ctx.quadraticCurveTo(-s * 0.32, 0, -s * 0.55, s * 0.5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // spiky dorsal fin
+    ctx.fillStyle = '#d9463f';
+    ctx.beginPath(); ctx.moveTo(-s * 0.72, -s * 0.3);
+    for (let i = 0; i <= 10; i++) ctx.lineTo(-s * 0.72 + i * s * 0.13, -s * 0.52 - (i % 2 ? s * 0.2 : 0) + Math.abs(i - 4) * s * 0.025);
+    ctx.lineTo(s * 0.6, -s * 0.35); ctx.closePath(); ctx.fill();
+    // belly fin
+    ctx.beginPath(); ctx.moveTo(-s * 0.4, s * 0.35); ctx.lineTo(-s * 0.2, s * 0.62); ctx.lineTo(0, s * 0.4); ctx.closePath(); ctx.fill();
+    // body
+    const g = ctx.createLinearGradient(0, -s * 0.6, 0, s * 0.6);
+    g.addColorStop(0, '#e23d47'); g.addColorStop(0.6, '#f47a72'); g.addColorStop(1, '#ffdcd2');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(s, s * 0.05);
+    ctx.bezierCurveTo(s * 0.8, -s * 0.78, -s * 0.6, -s * 0.72, -s * 0.95, 0);
+    ctx.bezierCurveTo(-s * 0.6, s * 0.6, s * 0.7, s * 0.6, s, s * 0.05); ctx.fill();
+    // blue spots
+    ctx.fillStyle = 'rgba(110,210,255,0.9)';
+    for (const [x, y] of TAI_SPOTS) { ctx.beginPath(); ctx.arc(x * s, y * s, s * 0.035, 0, Math.PI * 2); ctx.fill(); }
+    // gill + pectoral fin
+    ctx.strokeStyle = 'rgba(140,25,30,0.55)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(s * 0.2, 0, s * 0.38, -0.9, 0.9); ctx.stroke();
+    ctx.fillStyle = '#ef8a7a';
+    ctx.beginPath(); ctx.moveTo(s * 0.35, s * 0.1); ctx.quadraticCurveTo(0, s * 0.2 + Math.sin(t * 6) * 4, -s * 0.05, s * 0.3); ctx.lineTo(s * 0.3, s * 0.2); ctx.closePath(); ctx.fill();
+    // eye + angry brow
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 0.62, -s * 0.16, s * 0.11, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(s * 0.65, -s * 0.15, s * 0.06, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#7a1418'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(s * 0.48, -s * 0.33); ctx.lineTo(s * 0.76, -s * 0.24); ctx.stroke();
+    // mouth
+    ctx.fillStyle = '#7a1418';
+    ctx.beginPath(); ctx.moveTo(s * 1.0, s * 0.02); ctx.lineTo(s * 0.84, s * 0.1 + Math.abs(Math.sin(t * 4)) * s * 0.06); ctx.lineTo(s * 0.98, s * 0.14); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  // 宝物のアイコン（原点中心・おおよそ ±22 の範囲に描く）
+  function heartPath(c, x, y, s) {
+    c.beginPath(); c.moveTo(x, y + s * 0.9);
+    c.bezierCurveTo(x - s * 1.4, y - s * 0.1, x - s * 0.6, y - s * 1.2, x, y - s * 0.4);
+    c.bezierCurveTo(x + s * 0.6, y - s * 1.2, x + s * 1.4, y - s * 0.1, x, y + s * 0.9);
+  }
+  function drawTreasureIcon(c, id, t = 0) {
+    c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+    switch (id) {
+      case 'bottle': {
+        c.rotate(-0.5);
+        c.fillStyle = 'rgba(170,225,235,0.6)'; c.strokeStyle = 'rgba(80,150,170,0.95)'; c.lineWidth = 1.5;
+        c.beginPath(); c.moveTo(-5, -17); c.lineTo(5, -17); c.lineTo(5, -10); c.quadraticCurveTo(12, -7, 12, 0);
+        c.lineTo(12, 15); c.quadraticCurveTo(12, 19, 8, 19); c.lineTo(-8, 19); c.quadraticCurveTo(-12, 19, -12, 15);
+        c.lineTo(-12, 0); c.quadraticCurveTo(-12, -7, -5, -10); c.closePath(); c.fill();
+        c.fillStyle = '#f3e6c4'; c.beginPath(); c.roundRect(-6, -3, 12, 19, 3); c.fill();
+        c.strokeStyle = '#c9a86a'; c.lineWidth = 1;
+        c.beginPath(); c.moveTo(-5, 1); c.lineTo(5, 1); c.moveTo(-5, 11); c.lineTo(5, 11); c.stroke();
+        c.fillStyle = '#c0392b'; c.fillRect(-6, 5, 12, 2.5);
+        c.strokeStyle = 'rgba(80,150,170,0.95)'; c.lineWidth = 1.5;
+        c.beginPath(); c.moveTo(-5, -17); c.lineTo(5, -17); c.lineTo(5, -10); c.quadraticCurveTo(12, -7, 12, 0);
+        c.lineTo(12, 15); c.quadraticCurveTo(12, 19, 8, 19); c.lineTo(-8, 19); c.quadraticCurveTo(-12, 19, -12, 15);
+        c.lineTo(-12, 0); c.quadraticCurveTo(-12, -7, -5, -10); c.closePath(); c.stroke();
+        c.fillStyle = '#b07a42'; c.beginPath(); c.roundRect(-5, -23, 10, 7, 2); c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.75)'; c.fillRect(-10, 1, 2, 12);
+        break;
+      }
+      case 'pendant': {
+        c.strokeStyle = '#d9b54a'; c.lineWidth = 1.6; c.setLineDash([2.5, 1.8]);
+        c.beginPath(); c.moveTo(-15, -20); c.quadraticCurveTo(-8, -2, 0, -2); c.quadraticCurveTo(8, -2, 15, -20); c.stroke();
+        c.setLineDash([]);
+        const g = c.createLinearGradient(-9, 0, 9, 22);
+        g.addColorStop(0, '#fff0a8'); g.addColorStop(0.5, '#e0b340'); g.addColorStop(1, '#9c7420');
+        c.fillStyle = g; c.beginPath(); c.ellipse(0, 10, 10, 12, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#d9b54a'; c.beginPath(); c.arc(0, -2, 2.5, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = 'rgba(110,70,10,0.6)'; c.lineWidth = 1.2; c.beginPath(); c.ellipse(0, 10, 7, 9, 0, 0, Math.PI * 2); c.stroke();
+        c.fillStyle = '#d6263b'; heartPath(c, 0, 10, 5); c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.7)'; c.beginPath(); c.arc(-2, 8, 1.2, 0, Math.PI * 2); c.fill();
+        break;
+      }
+      case 'compass': {
+        c.strokeStyle = '#b8902c'; c.lineWidth = 2; c.beginPath(); c.arc(0, -19, 3.5, 0, Math.PI * 2); c.stroke();
+        const g = c.createLinearGradient(-18, -18, 18, 18);
+        g.addColorStop(0, '#fff0a8'); g.addColorStop(0.5, '#e0b340'); g.addColorStop(1, '#9c7420');
+        c.fillStyle = g; c.beginPath(); c.arc(0, 0, 17, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#fbf3dc'; c.beginPath(); c.arc(0, 0, 13, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = '#8a6a2a'; c.lineWidth = 1;
+        for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; c.beginPath(); c.moveTo(Math.cos(a) * 10, Math.sin(a) * 10); c.lineTo(Math.cos(a) * 12.5, Math.sin(a) * 12.5); c.stroke(); }
+        c.fillStyle = '#8a6a2a'; c.font = 'bold 6px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('N', 0, -7.5);
+        c.rotate(0.6 + Math.sin(t * 1.3) * 0.35);
+        c.fillStyle = '#d6263b'; c.beginPath(); c.moveTo(0, -11); c.lineTo(3, 0); c.lineTo(-3, 0); c.closePath(); c.fill();
+        c.fillStyle = '#2f4f9a'; c.beginPath(); c.moveTo(0, 11); c.lineTo(3, 0); c.lineTo(-3, 0); c.closePath(); c.fill();
+        c.fillStyle = '#e0b340'; c.beginPath(); c.arc(0, 0, 2, 0, Math.PI * 2); c.fill();
+        break;
+      }
+      case 'pearl': {
+        c.fillStyle = '#f5d2cc'; c.beginPath(); c.moveTo(-19, 4); c.quadraticCurveTo(0, -30, 19, 4); c.closePath(); c.fill();
+        c.fillStyle = '#e8aea4'; c.beginPath(); c.moveTo(-19, 4); c.quadraticCurveTo(0, 30, 19, 4); c.closePath(); c.fill();
+        c.strokeStyle = 'rgba(170,90,80,0.45)'; c.lineWidth = 1;
+        for (let k = -3; k <= 3; k++) { c.beginPath(); c.moveTo(0, 16); c.lineTo(k * 5.5, 5); c.stroke(); }
+        const glow = c.createRadialGradient(0, -2, 0, 0, -2, 16);
+        glow.addColorStop(0, `rgba(255,255,240,${0.55 + 0.25 * Math.sin(t * 3)})`); glow.addColorStop(1, 'rgba(255,255,240,0)');
+        c.fillStyle = glow; c.beginPath(); c.arc(0, -2, 16, 0, Math.PI * 2); c.fill();
+        const g = c.createRadialGradient(-2.5, -4.5, 1, 0, -2, 8);
+        g.addColorStop(0, '#ffffff'); g.addColorStop(0.6, '#eef0f6'); g.addColorStop(1, '#c9cbe0');
+        c.fillStyle = g; c.beginPath(); c.arc(0, -2, 7.5, 0, Math.PI * 2); c.fill();
+        break;
+      }
+      case 'sword': {
+        c.rotate(-Math.PI / 4);
+        const g = c.createLinearGradient(-3, 0, 3, 0);
+        g.addColorStop(0, '#9aa6b0'); g.addColorStop(0.5, '#f4f7f9'); g.addColorStop(1, '#8a96a0');
+        c.fillStyle = g; c.beginPath(); c.moveTo(-3.2, 7); c.lineTo(-3.2, -18); c.lineTo(0, -24); c.lineTo(3.2, -18); c.lineTo(3.2, 7); c.closePath(); c.fill();
+        c.strokeStyle = 'rgba(90,100,110,0.6)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(0, 5); c.lineTo(0, -19); c.stroke();
+        c.fillStyle = '#e0b340'; c.beginPath(); c.roundRect(-10, 7, 20, 4, 2); c.fill();
+        c.fillStyle = '#2f4f9a'; c.fillRect(-2, 11, 4, 9);
+        c.strokeStyle = '#1c3270'; c.lineWidth = 0.8;
+        for (let y = 12; y < 20; y += 2.5) { c.beginPath(); c.moveTo(-2, y); c.lineTo(2, y + 1.5); c.stroke(); }
+        c.fillStyle = '#e0b340'; c.beginPath(); c.arc(0, 22, 3.2, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#d6263b'; c.beginPath(); c.arc(0, 22, 1.5, 0, Math.PI * 2); c.fill();
+        break;
+      }
+      case 'shield': {
+        const shape = () => { c.beginPath(); c.moveTo(-15, -17); c.lineTo(15, -17); c.lineTo(15, -2); c.quadraticCurveTo(15, 13, 0, 21); c.quadraticCurveTo(-15, 13, -15, -2); c.closePath(); };
+        c.fillStyle = '#b8322a'; shape(); c.fill();
+        c.strokeStyle = '#e0b340'; c.lineWidth = 3; shape(); c.stroke();
+        c.fillStyle = '#e0b340';
+        c.beginPath(); c.moveTo(0, -11); c.lineTo(3, -3); c.lineTo(11, -3); c.lineTo(4.5, 2); c.lineTo(7, 10); c.lineTo(0, 5); c.lineTo(-7, 10); c.lineTo(-4.5, 2); c.lineTo(-11, -3); c.lineTo(-3, -3); c.closePath(); c.fill();
+        c.strokeStyle = 'rgba(60,10,10,0.5)'; c.lineWidth = 1;
+        c.beginPath(); c.moveTo(-10, 8); c.lineTo(-5, 13); c.moveTo(9, -12); c.lineTo(12, -8); c.stroke();
+        c.fillStyle = '#f5d98a'; for (const [x, y] of [[-12, -14], [12, -14], [-12, 0], [12, 0]]) { c.beginPath(); c.arc(x, y, 1.2, 0, Math.PI * 2); c.fill(); }
+        break;
+      }
+      case 'feather': {
+        c.rotate(-0.55);
+        const fl = Math.sin(t * 8) * 1.5;
+        c.fillStyle = 'rgba(255,170,40,0.35)';
+        c.beginPath(); c.moveTo(-4, -18); c.quadraticCurveTo(-2, -27 - fl, 0, -24); c.quadraticCurveTo(3, -29 + fl, 4, -18); c.fill();
+        const g = c.createLinearGradient(0, 20, 0, -22);
+        g.addColorStop(0, '#c9241a'); g.addColorStop(0.5, '#ff7a1e'); g.addColorStop(1, '#ffe066');
+        c.fillStyle = g;
+        c.beginPath(); c.moveTo(0, 18); c.bezierCurveTo(-13, 6, -11, -12, 0, -22); c.bezierCurveTo(11, -12, 13, 6, 0, 18); c.fill();
+        c.strokeStyle = 'rgba(255,240,200,0.6)'; c.lineWidth = 0.8;
+        for (let y = -14; y < 12; y += 4) { c.beginPath(); c.moveTo(0, y + 2); c.lineTo(-8 + Math.abs(y) * 0.2, y - 3); c.moveTo(0, y + 2); c.lineTo(8 - Math.abs(y) * 0.2, y - 3); c.stroke(); }
+        c.strokeStyle = '#fff2c0'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(0, 24); c.lineTo(0, -20); c.stroke();
+        break;
+      }
+      case 'crown': {
+        const g = c.createLinearGradient(0, -14, 0, 12);
+        g.addColorStop(0, '#b48a48'); g.addColorStop(1, '#6e4a22');
+        c.fillStyle = g;
+        c.beginPath(); c.moveTo(-17, 6); c.lineTo(-17, -10); c.lineTo(-8, -1); c.lineTo(0, -15); c.lineTo(8, -1); c.lineTo(17, -10); c.lineTo(17, 6); c.closePath(); c.fill();
+        c.fillStyle = '#7d5226'; c.fillRect(-17, 4, 34, 9);
+        c.fillStyle = 'rgba(95,150,125,0.75)';
+        for (const [x, y, r] of [[-11, 7, 3], [6, -3, 2.5], [13, 9, 2.2], [-4, 0, 1.8]]) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); }
+        c.fillStyle = 'rgba(120,55,25,0.8)';
+        for (const [x, y, r] of [[-6, 10, 2], [10, 3, 1.6], [-13, -4, 1.5]]) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); }
+        c.fillStyle = '#c9a45a'; for (const [x, y] of [[-17, -10], [0, -15], [17, -10]]) { c.beginPath(); c.arc(x, y, 2.3, 0, Math.PI * 2); c.fill(); }
+        c.fillStyle = '#e0304a'; c.beginPath(); c.arc(0, 8.5, 3, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#3a8ae0'; c.beginPath(); c.arc(-9, 8.5, 2, 0, Math.PI * 2); c.arc(9, 8.5, 2, 0, Math.PI * 2); c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.8)'; c.beginPath(); c.arc(-1, 7.5, 0.9, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = 'rgba(40,20,5,0.6)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(4, 4); c.lineTo(6, 8); c.lineTo(5, 12); c.stroke();
+        break;
+      }
+      case 'hook': {
+        c.fillStyle = '#6b3f22'; c.beginPath(); c.roundRect(-8, 5, 16, 16, 4); c.fill();
+        c.fillStyle = '#e0b340'; c.fillRect(-8, 6, 16, 2.5);
+        c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(-8, 15, 16, 1.5);
+        c.lineWidth = 5; c.strokeStyle = '#5b6770';
+        const path = () => { c.beginPath(); c.moveTo(0, 6); c.lineTo(0, -7); c.arc(-8, -7, 8, 0, Math.PI, true); c.lineTo(-14, -2); };
+        path(); c.stroke();
+        c.lineWidth = 2.5; c.strokeStyle = '#dfe6ea'; path(); c.stroke();
+        break;
+      }
+      case 'katana': {
+        const aura = c.createRadialGradient(0, 0, 0, 0, 0, 24);
+        aura.addColorStop(0, `rgba(150,70,220,${0.35 + 0.15 * Math.sin(t * 4)})`); aura.addColorStop(1, 'rgba(150,70,220,0)');
+        c.fillStyle = aura; c.beginPath(); c.arc(0, 0, 24, 0, Math.PI * 2); c.fill();
+        c.rotate(0.75);
+        c.strokeStyle = '#3a3f4a'; c.lineWidth = 4; c.beginPath(); c.moveTo(0, 8); c.quadraticCurveTo(0, -10, 5, -24); c.stroke();
+        c.strokeStyle = '#c9a8ff'; c.lineWidth = 1; c.beginPath(); c.moveTo(1.8, 7); c.quadraticCurveTo(1.8, -10, 6.5, -23); c.stroke();
+        c.fillStyle = '#2b2130'; c.beginPath(); c.ellipse(0, 9, 6, 2.6, 0, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = '#8a6a2a'; c.lineWidth = 0.8; c.stroke();
+        c.strokeStyle = '#1a1420'; c.lineWidth = 4.5; c.beginPath(); c.moveTo(0, 11); c.lineTo(-1, 24); c.stroke();
+        c.strokeStyle = '#7a3a9a'; c.lineWidth = 1;
+        for (let y = 13; y < 23; y += 3) { c.beginPath(); c.moveTo(-2.5, y); c.lineTo(1.5, y + 1.5); c.moveTo(1.5, y); c.lineTo(-2.5, y + 1.5); c.stroke(); }
+        break;
+      }
+    }
+    c.restore();
+  }
+
+  function drawTreasureItem(p, t) {
+    const sc = Math.min(1, p.age * 3) * (p.life < 2 && Math.floor(t * 10) % 2 ? 0.7 : 1);
+    ctx.save(); ctx.translate(p.x, p.y + Math.sin(t * 2 + p.ph) * 4); ctx.scale(sc, sc);
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, 34);
+    glow.addColorStop(0, 'rgba(255,248,210,0.75)'); glow.addColorStop(1, 'rgba(255,248,210,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff6c8';
+    for (let k = 0; k < 4; k++) {
+      const a = t * 1.5 + k * Math.PI / 2, x = Math.cos(a) * 26, y = Math.sin(a) * 26, r = 3;
+      ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.3, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.3, y); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x, y + r * 0.3); ctx.lineTo(x + r, y); ctx.lineTo(x, y - r * 0.3); ctx.closePath(); ctx.fill();
+    }
+    ctx.scale(0.9, 0.9);
+    drawTreasureIcon(ctx, p.treasure, t);
+    ctx.restore();
+  }
+
+  function drawPlankton(p, t) {
+    if (p.rainbow) return drawRainbow(p, t);
+    if (p.treasure) return drawTreasureItem(p, t);
+    const sc = Math.min(1, p.age * 4) * (p.life < 1 ? p.life : 1);
+    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(sc, sc); ctx.rotate(t * 0.8 + p.ph);
+    ctx.fillStyle = 'rgba(198,239,110,0.25)';
+    ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#c6ef6e'; ctx.lineWidth = 1.4;
+    for (let k = 0; k < 3; k++) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.stroke(); }
+    ctx.fillStyle = '#e6ffb0'; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  // ---------- game state ----------
+  let state = 'title';
+  let G;
+  const keys = {};
+  const ptr = { active: false, hold: false, id: null, x: 0, y: 0 };
+
+  // ---------- control mode (touch devices only) ----------
+  const MODE_KEY = 'ebi-dive-control';
+  const coarse = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  let ctrlMode = 'touch';
+  try { if (localStorage.getItem(MODE_KEY) === 'stick') ctrlMode = 'stick'; } catch (e) {}
+  const stickMode = () => coarse && ctrlMode === 'stick';
+  const stageEl = document.querySelector('.stage');
+  const modeBtns = document.querySelectorAll('[data-mode]');
+  function applyMode() {
+    modeBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === ctrlMode)));
+    stageEl.classList.toggle('stick-mode', stickMode());
+    $('modeHint').textContent = ctrlMode === 'stick'
+      ? '左下のスティックで移動、右下のボタンではねる'
+      : 'タップした場所へ泳ぐ。ダブルタップか右下のボタンではねる';
+  }
+  modeBtns.forEach(b => b.addEventListener('click', () => {
+    ctrlMode = b.dataset.mode;
+    try { localStorage.setItem(MODE_KEY, ctrlMode); } catch (e) {}
+    applyMode();
+  }));
+  applyMode();
+
+  // virtual stick
+  const stickEl = $('stick'), knob = stickEl.querySelector('.stick-knob');
+  const stickIn = { x: 0, y: 0, id: null };
+  function moveStick(e) {
+    const r = stickEl.getBoundingClientRect(), max = r.width * 0.36;
+    let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const m = Math.hypot(dx, dy);
+    if (m > max) { dx *= max / m; dy *= max / m; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    stickIn.x = dx / max; stickIn.y = dy / max;
+  }
+  function releaseStick() {
+    stickIn.id = null; stickIn.x = 0; stickIn.y = 0;
+    knob.style.transform = '';
+  }
+  stickEl.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    stickIn.id = e.pointerId;
+    try { stickEl.setPointerCapture(e.pointerId); } catch (_) {}
+    moveStick(e);
+  });
+  stickEl.addEventListener('pointermove', e => { if (e.pointerId === stickIn.id) moveStick(e); });
+  stickEl.addEventListener('pointerup', e => { if (e.pointerId === stickIn.id) releaseStick(); });
+  stickEl.addEventListener('pointercancel', e => { if (e.pointerId === stickIn.id) releaseStick(); });
+
+  function newGame() {
+    G = {
+      time: GAME_TIME, score: 0, lives: diff === 'hard' ? 1 : 3, elapsed: 0, shake: 0,
+      hard: diff === 'hard', maxLives: diff === 'hard' ? 1 : 3,
+      p: { x: 160, y: H / 2, vx: 0, vy: 0, dir: 1, dash: 0, cool: 0, inv: 1, power: 0, vs: diff === 'hard' ? 0.96 : 0.8 },
+      plank: [], krill: [], hooks: [], fish: [], fx: [], texts: [],
+      spP: 0, spK: rnd(3, 5), spH: 3, spF: 5, reason: 'time',
+      tai: null, taiDone: false, taiRoll: 1, banner: null, boat: null, gold: null, scale: null, treasureDone: false, foundTreasure: null,
+    };
+  }
+  newGame();
+  const shrimpScale = () => (0.8 + Math.min(G.score, 220) / 220 * 0.9) * (G.hard ? 1.2 : 1);
+
+  function burst(x, y, n, col) {
+    for (let i = 0; i < n; i++) G.fx.push({ x, y, vx: rnd(-90, 90), vy: rnd(-110, 40), r: rnd(1.5, 3.5), life: rnd(0.4, 0.8), col });
+  }
+  // 被弾・捕獲時の破片は、いま選んでいるスキンの色で飛ばす
+  function skinBurst(x, y, n) {
+    const k = SKINS.find(s => s.id === skin) || SKINS[0];
+    for (let i = 0; i < n; i++) burst(x, y, 1, i % 2 ? k.body : k.shade);
+  }
+  function popText(x, y, txt, col) { G.texts.push({ x, y, txt, col, life: 0.9 }); }
+
+  function dash() {
+    if (state !== 'play') return;
+    const p = G.p;
+    if (p.cool > 0) return;
+    p.vx = -p.dir * 720; p.vy *= 0.3;
+    p.dash = 0.28; p.cool = 1.0; p.inv = Math.max(p.inv, 0.35);
+    burst(p.x + p.dir * 10, p.y, 8, 'rgba(220,250,255,0.8)');
+  }
+
+  // 持っていない宝物は重み UNOWNED_TREASURE_WEIGHT（持っている宝物は 1）で抽選 → 未所持ほど出やすい
+  function pickTreasure() {
+    const ws = TREASURES.map(tr => save.treasures.includes(tr.id) ? 1 : UNOWNED_TREASURE_WEIGHT);
+    let r = Math.random() * ws.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < TREASURES.length; i++) { if ((r -= ws[i]) < 0) return TREASURES[i].id; }
+    return TREASURES[TREASURES.length - 1].id;
+  }
+
+  function holeRange(i) {
+    const slot = (H - 70) / 4, top = 30 + i * slot;
+    return [top + 6, top + slot - 6];
+  }
+
+  function spawnBoat() {
+    G.taiDone = true;
+    G.boat = { x: -180, phase: 'enter', cast: 0, list: [], wait: 0 };
+    G.banner = { txt: '漁船が来た！ 網の穴をくぐり抜けろ', life: 2.2, col: '#ff8a7a' };
+  }
+
+  function spawnTai() {
+    G.taiDone = true;
+    const d = Math.random() < 0.5 ? 1 : -1;
+    G.tai = { x: d > 0 ? -130 : W + 130, y: rnd(120, H - 120), dir: d, size: TAI_SIZE, legs: 0, hits: 0, touching: false, flee: false, wob: 0, flash: 0 };
+    G.banner = { txt: '鯛が来た！ 食べられたら一発アウト', life: 2, col: '#ff8a7a' };
+  }
+
+  function hit() {
+    const p = G.p;
+    G.lives--; p.inv = 1.6; G.shake = 0.35;
+    popText(p.x, p.y - 30, 'いたっ', '#ff9a86');
+    skinBurst(p.x, p.y, 14);
+    if (G.lives <= 0) { G.reason = 'caught'; endGame(); }
+  }
+
+  function update(dt, t) {
+    const p = G.p;
+    G.time -= dt; G.elapsed += dt;
+    if (G.time <= 0) { G.time = 0; G.reason = 'time'; endGame(); return; }
+
+    // movement
+    let ax = 0, ay = 0;
+    if (keys.left) ax -= 1; if (keys.right) ax += 1; if (keys.up) ay -= 1; if (keys.down) ay += 1;
+    if (ptr.active && !ptr.hold && Math.hypot(ptr.x - p.x, ptr.y - p.y) < 10) ptr.active = false;
+    if (stickMode() && Math.hypot(stickIn.x, stickIn.y) > 0.15) { ax += stickIn.x; ay += stickIn.y; }
+    if (ax || ay) {
+      ptr.active = false;
+      const l = Math.max(1, Math.hypot(ax, ay));
+      p.vx += ax / l * 1500 * dt; p.vy += ay / l * 1500 * dt;
+    } else if (ptr.active && p.dash <= 0) {
+      let dvx = (ptr.x - p.x) * 5, dvy = (ptr.y - p.y) * 5;
+      const m = Math.hypot(dvx, dvy);
+      if (m > 290) { dvx *= 290 / m; dvy *= 290 / m; }
+      const k = Math.min(1, 7 * dt);
+      p.vx += (dvx - p.vx) * k; p.vy += (dvy - p.vy) * k;
+    }
+    const damp = p.dash > 0 ? 1.5 : 3.2;
+    p.vx -= p.vx * damp * dt; p.vy -= p.vy * damp * dt;
+    if (p.dash <= 0) { const sp = Math.hypot(p.vx, p.vy); if (sp > 290) { p.vx *= 290 / sp; p.vy *= 290 / sp; } }
+    p.x = clamp(p.x + p.vx * dt, 30, W - 30);
+    p.y = clamp(p.y + p.vy * dt, 30, H - 44);
+    if (p.dash <= 0 && Math.abs(p.vx) > 25) p.dir = Math.sign(p.vx);
+    p.dash -= dt; p.cool -= dt; p.inv -= dt;
+    if (p.power > 0) {
+      p.power -= dt;
+      if (Math.random() < 0.6) G.fx.push({ x: p.x + rnd(-14, 14), y: p.y + rnd(-10, 10), vx: rnd(-20, 20), vy: rnd(-30, 10), r: rnd(1.5, 3), life: 0.5, col: `hsl(${rnd(0, 360)},100%,70%)` });
+    }
+    // 見た目の大きさはスコアから求めた大きさへ少しずつ近づける（段差のある成長を防ぐ）
+    p.vs += (shrimpScale() - p.vs) * Math.min(1, 3 * dt);
+    const pr = 14 * p.vs;
+    const base = G.hard ? 2 : 1;             // ハードは全スコア2倍
+    const mult = base * (p.power > 0 ? 2 : 1); // 無敵中はさらに2倍
+
+    // spawns
+    const e = G.elapsed;
+    if ((G.spP -= dt) <= 0 && G.plank.length < 28) {
+      G.spP = rnd(0.16, 0.36);
+      const rainbow = Math.random() < RAINBOW_CHANCE && p.power <= 0 && !G.plank.some(q => q.rainbow);
+      // 通常プランクトンが 0.01% で宝物に変わる（1プレイ最大1回）
+      let treasure = null;
+      if (!rainbow && !G.treasureDone && Math.random() < TREASURE_CHANCE) {
+        treasure = pickTreasure();
+        G.treasureDone = true;
+      }
+      G.plank.push({ x: rnd(30, W - 30), y: rnd(40, H - 60), vx: rnd(-12, 12), vy: rnd(-8, 8), ph: rnd(0, 6), age: 0, life: rainbow ? 6 : treasure ? 10 : rnd(7, 11), rainbow, treasure });
+    }
+    if ((G.spK -= dt) <= 0) {
+      G.spK = rnd(4, 6.5);
+      const d = Math.random() < 0.5 ? 1 : -1;
+      G.krill.push({ x: d > 0 ? -30 : W + 30, y: rnd(60, H - 90), vx: d * rnd(120, 170), ph: rnd(0, 6) });
+    }
+    const boatActive = G.boat && G.boat.phase !== 'leave'; // 網の間は釣り針と魚を出さない
+    if (!boatActive && (G.spH -= dt) <= 0) {
+      G.spH = Math.max(1.4, 3.8 - e * 0.04) * rnd(0.8, 1.2);
+      G.hooks.push({ x: rnd(60, W - 60), y: -20, ty: rnd(110, H - 80), st: 'down', wait: rnd(1.5, 3), t: 0 });
+    }
+    if (!boatActive && e > 4 && (G.spF -= dt) <= 0) {
+      G.spF = Math.max(1.1, 3.6 - e * 0.05) * rnd(0.8, 1.2);
+      const d = Math.random() < 0.5 ? 1 : -1, speed = rnd(110, 160) + e * 1.6;
+      if (Math.random() < (G.hard ? MAGURO_HARD : MAGURO_NORMAL)) {
+        // マグロ: 魚の2倍速で一往復。画面端に0.8秒予告を出してから突っ込む
+        G.fish.push({ maguro: true, warn: 0.8, turned: false, x: d > 0 ? -70 : W + 70, y: rnd(70, H - 90), vx: d * speed * 2, size: 34, wob: rnd(0, 6) });
+      } else {
+        G.fish.push({ x: d > 0 ? -60 : W + 60, y: rnd(60, H - 80), vx: d * speed, size: rnd(22, 34), wob: rnd(0, 6) });
+      }
+    }
+
+    // plankton
+    for (const q of G.plank) {
+      q.age += dt; q.life -= dt;
+      q.x += q.vx * dt + Math.sin(t * 1.5 + q.ph) * 0.3; q.y += q.vy * dt;
+      if (Math.hypot(q.x - p.x, q.y - p.y) < pr + (q.rainbow || q.treasure ? 14 : 9)) {
+        q.life = -1;
+        if (q.treasure) {
+          // 宝物: 得点はプランクトンと同じ。図鑑に登録
+          const tr = TREASURES.find(x => x.id === q.treasure);
+          const isNew = !save.treasures.includes(tr.id);
+          if (isNew) { save.treasures.push(tr.id); persist(); renderZukanBtn(); renderSkins(); }
+          G.foundTreasure = { id: tr.id, isNew };
+          G.score += mult;
+          popText(q.x, q.y - 14, '+' + mult, '#ffe36e');
+          const hatName = HATS.find(h => h.from === tr.id).name;
+          const allNow = isNew && save.treasures.length === TREASURES.length;
+          G.banner = {
+            txt: allNow ? '宝物コンプリート！ 虹色のえびが開放された'
+              : isNew ? `宝物発見！「${tr.name}」 かぶりもの「${hatName}」ゲット` : `宝物発見！「${tr.name}」`,
+            life: allNow ? 3.2 : 2.6, col: '#fff3b0',
+          };
+          for (let k = 0; k < 18; k++) burst(q.x, q.y, 1, k % 2 ? '#fff3b0' : '#9fe0ff');
+        } else if (q.rainbow) {
+          p.power = POWER_TIME; p.powerMax = POWER_TIME;
+          popText(q.x, q.y - 16, '無敵！ スコア2倍', '#fff3a0');
+          for (let k = 0; k < 24; k++) burst(q.x, q.y, 1, `hsl(${k * 15},100%,65%)`);
+        } else {
+          G.score += mult;
+          popText(q.x, q.y - 12, '+' + mult, mult > 1 ? '#ffe36e' : '#c6ef6e'); burst(q.x, q.y, 4, '#c6ef6e');
+        }
+      }
+    }
+    G.plank = G.plank.filter(q => q.life > 0);
+
+    for (const k of G.krill) {
+      k.x += k.vx * dt; k.ph += dt;
+      k.y += Math.sin(k.ph * 4) * 40 * dt;
+      if (Math.hypot(k.x - p.x, k.y - p.y) < pr + 12) {
+        k.dead = true; G.score += 5 * mult;
+        popText(k.x, k.y - 16, '+' + 5 * mult, '#ffd35a'); burst(k.x, k.y, 10, '#ffd35a');
+      }
+    }
+    G.krill = G.krill.filter(k => !k.dead && k.x > -60 && k.x < W + 60);
+
+    for (const h of G.hooks) {
+      h.t += dt;
+      if (h.st === 'down') { h.y += 170 * dt; if (h.y >= h.ty) { h.y = h.ty; h.st = 'wait'; } }
+      else if (h.st === 'wait') { h.y = h.ty + Math.sin(h.t * 2) * 6; if ((h.wait -= dt) <= 0) h.st = 'up'; }
+      else h.y -= 230 * dt;
+      if (p.inv <= 0 && p.power <= 0 && Math.hypot(h.x - 6 - p.x, h.y + 4 - p.y) < pr * 0.75 + 9) hit();
+    }
+    G.hooks = G.hooks.filter(h => h.y > -40);
+
+    for (const f of G.fish) {
+      if (f.warn > 0) { f.warn -= dt; continue; }
+      f.x += f.vx * dt; f.wob += dt; f.y += Math.sin(f.wob * 2) * 20 * dt;
+      if (f.maguro && !f.turned && (f.vx > 0 ? f.x > W - 60 : f.x < 60)) { f.turned = true; f.vx = -f.vx; }
+      const touch = f.maguro
+        ? Math.hypot((f.x - p.x) / (f.size * 1.25 + pr * 0.75), (f.y - p.y) / (f.size * 0.5 + pr * 0.75)) < 1 // 細長い体
+        : Math.hypot(f.x - p.x, (f.y - p.y) * 1.4) < pr * 0.75 + f.size * 0.75;
+      if (touch && p.power > 0) {
+        const pts = (f.maguro ? 10 : 3) * base;
+        f.dead = true; G.score += pts;
+        popText(f.x, f.y - 20, '+' + pts, '#ffe36e'); burst(f.x, f.y, 12, '#9fc0dc');
+      } else if (touch && p.inv <= 0) hit();
+    }
+    G.fish = G.fish.filter(f => !f.dead && f.x > -140 && f.x < W + 140);
+
+    // 鯛
+    if (!G.taiDone && e > 12 && e < 50 && (G.taiRoll -= dt) <= 0) {
+      G.taiRoll = 1;
+      if (Math.random() < TAI_CHANCE) {
+        if (G.hard && Math.random() < 0.5) spawnBoat(); else spawnTai();
+      }
+    }
+
+    // 漁船: 左から右へ流れる網を3回。4か所の穴のうち1つだけ開いている
+    const B = G.boat;
+    if (B) {
+      if (B.phase === 'enter') {
+        B.x += 130 * dt;
+        if (B.x >= 120) { B.x = 120; B.phase = 'cast'; B.wait = 0.4; }
+      } else if (B.phase === 'cast') {
+        // 前の網が NET_NEXT_AT まで進んだら次の網を下ろす（最初の1枚は B.wait 後）
+        const lastNet = B.list[B.list.length - 1];
+        const ready = lastNet ? lastNet.st === 'sweep' && lastNet.x >= NET_NEXT_AT : (B.wait -= dt) <= 0;
+        if (B.cast < BOAT_NETS && ready) {
+          B.list.push({ x: 20, hole: Math.floor(Math.random() * 4), st: 'drop', t: 0 });
+          B.cast++;
+        }
+        for (const n of B.list) {
+          if (n.st === 'drop') { if ((n.t += dt) >= 1) n.st = 'sweep'; continue; }
+          n.x += NET_SPEED * dt;
+          const [h0, h1] = holeRange(n.hole);
+          const inHole = p.y - pr * 0.45 > h0 && p.y + pr * 0.45 < h1;
+          if (state === 'play' && p.power <= 0 && !inHole && Math.abs(p.x - n.x) < 12 + pr * 0.6) {
+            skinBurst(p.x, p.y, 20);
+            G.lives = 0; G.score = 0; G.reason = 'net'; endGame();
+          }
+        }
+        B.list = B.list.filter(n => n.x <= W + 30);
+        if (B.cast >= BOAT_NETS && !B.list.length) {
+          B.phase = 'leave';
+          G.gold = { x: clamp(B.x, 80, W - 80), y: 40, ty: rnd(160, H - 120), life: 10, t: 0 };
+          G.banner = { txt: '金色の栄養食が落ちてきた！', life: 1.8, col: '#ffe36e' };
+        }
+      } else {
+        B.x += 170 * dt;
+        if (B.x > W + 200) G.boat = null;
+      }
+    }
+    const sc = G.scale;
+    if (sc) {
+      sc.t += dt; sc.life -= dt;
+      if (Math.hypot(sc.x - p.x, sc.y - p.y) < pr + 16) {
+        G.scale = null;
+        p.power = SCALE_POWER_TIME; p.powerMax = SCALE_POWER_TIME;
+        G.score += SCALE_PTS;
+        popText(sc.x, sc.y - 22, `+${SCALE_PTS} 鯛のウロコ！ ${SCALE_POWER_TIME}秒無敵`, '#ffd6dc');
+        for (let k = 0; k < 20; k++) burst(sc.x, sc.y, 1, `hsl(${340 + k * 6},100%,78%)`);
+      } else if (sc.life <= 0) G.scale = null;
+    }
+    const gf = G.gold;
+    if (gf) {
+      gf.t += dt; gf.life -= dt;
+      if (gf.y < gf.ty) gf.y = Math.min(gf.ty, gf.y + 110 * dt);
+      if (Math.hypot(gf.x - p.x, gf.y - p.y) < pr + 16) {
+        // 無敵（虹色プランクトン・鯛のウロコ）中はスコア2倍の対象
+        const gp = GOLD_FOOD_PTS * (p.power > 0 ? 2 : 1);
+        G.score += gp; G.gold = null;
+        popText(gf.x, gf.y - 22, `+${gp} 金色の栄養食！`, '#ffe36e');
+        for (let k = 0; k < 16; k++) burst(gf.x, gf.y, 1, k % 2 ? '#ffd35a' : '#fff3b0');
+      } else if (gf.life <= 0) G.gold = null;
+    }
+    const T = G.tai;
+    if (T) {
+      T.wob += dt; T.flash -= dt;
+      T.x += T.dir * (T.flee ? 560 : 190 + e * 1.2) * dt;
+      if (!T.flee) {
+        // ハードはえびの高さへ素早く寄せ、上下のうねりも大きい
+        const track = G.hard ? 125 : 45, sway = G.hard ? 70 : 25;
+        T.y = clamp(T.y + clamp(p.y - T.y, -1, 1) * track * dt + Math.sin(T.wob * (G.hard ? 3 : 2)) * sway * dt, 70, H - 90);
+        const atEdge = T.dir > 0 ? T.x > W - 70 : T.x < 70;
+        if (atEdge && T.legs < 3) { T.legs++; T.dir *= -1; } // 右→左→右→左 で二往復
+      }
+      const touch = !T.flee && Math.hypot(T.x - p.x, (T.y - p.y) * 1.3) < pr * 0.75 + T.size * 0.8;
+      if (touch && !T.touching) {
+        if (p.power > 0) {
+          T.hits++; T.flash = 0.4; burst(p.x, p.y, 10, '#ff8a7a');
+          p.vx = (p.x >= T.x ? 1 : -1) * 520; p.dash = 0.2;
+          if (T.hits >= 2) {
+            T.flee = true; T.dir = p.x < T.x ? 1 : -1;
+            G.score += 30 * base;
+            popText(T.x, T.y - 50, `+${30 * base} 鯛を追い払った！`, '#ffe36e');
+          } else {
+            popText(T.x, T.y - 50, 'あと1回！', '#ffe36e');
+          }
+        } else if (p.inv <= 0) {
+          skinBurst(p.x, p.y, 20);
+          G.lives = 0; G.score = 0; G.reason = 'tai'; endGame();
+        }
+      }
+      T.touching = touch;
+      if (T.x < -220 || T.x > W + 220) {
+        G.tai = null;
+        if (G.hard) {
+          G.scale = { x: rnd(100, W - 100), y: rnd(100, H - 110), life: 10, t: 0 };
+          G.banner = { txt: '鯛のウロコが落ちている！', life: 1.8, col: '#ffc2c8' };
+        } else {
+          G.plank.push({ x: rnd(80, W - 80), y: rnd(80, H - 90), vx: rnd(-12, 12), vy: rnd(-8, 8), ph: rnd(0, 6), age: 0, life: 6, rainbow: true });
+          G.banner = { txt: '虹色のプランクトンが現れた！', life: 1.8, col: '#fff3a0' };
+        }
+      }
+    }
+  }
+
+  function updateFx(dt) {
+    for (const f of G.fx) { f.life -= dt; f.x += f.vx * dt; f.y += f.vy * dt; f.vy -= 60 * dt; }
+    G.fx = G.fx.filter(f => f.life > 0);
+    for (const tx of G.texts) { tx.life -= dt; tx.y -= 40 * dt; }
+    G.texts = G.texts.filter(tx => tx.life > 0);
+    G.shake = Math.max(0, G.shake - dt);
+    if (G.banner && (G.banner.life -= dt) <= 0) G.banner = null;
+  }
+
+  function drawHUD() {
+    ctx.save();
+    const ox = 64; // 左上にポーズボタンがあるので、スコア欄を右へずらす
+    // スコア欄は中身の幅に合わせる（「pt」の右に余白が残らないように）
+    ctx.textBaseline = 'middle';
+    ctx.font = '26px "Dela Gothic One", sans-serif';
+    const sw = ctx.measureText(String(G.score)).width;
+    ctx.font = '700 14px "Zen Maru Gothic", sans-serif';
+    const ptw = ctx.measureText('pt').width;
+    const scoreW = Math.max(72, 14 + sw + 4 + ptw + 14);
+    ctx.fillStyle = 'rgba(8,30,40,0.55)';
+    ctx.beginPath(); ctx.roundRect(12 + ox, 12, scoreW, 44, 10); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(W - 172, 12, 160, 44, 10); ctx.fill();
+    ctx.fillStyle = '#e4f2ef';
+    ctx.font = '26px "Dela Gothic One", sans-serif';
+    ctx.fillText(String(G.score), 26 + ox, 35);
+    ctx.font = '700 14px "Zen Maru Gothic", sans-serif'; ctx.fillStyle = '#88adac';
+    ctx.fillText('pt', 30 + ox + sw, 38);
+    // time
+    const tt = Math.ceil(G.time);
+    ctx.font = '26px "Dela Gothic One", sans-serif';
+    ctx.fillStyle = tt <= 10 ? '#ff9a86' : '#e4f2ef';
+    ctx.textAlign = 'right'; ctx.fillText(String(tt), W - 110, 35);
+    ctx.textAlign = 'left';
+    // lives
+    for (let i = 0; i < G.maxLives; i++) {
+      ctx.globalAlpha = i < G.lives ? 1 : 0.2;
+      drawShrimp(ctx, W - 92 + i * 26, 36, 0.42, 1, 0, { skin, hat });
+    }
+    ctx.globalAlpha = 1;
+    if (G.hard) {
+      ctx.font = '14px "Dela Gothic One", sans-serif'; ctx.fillStyle = '#ff7a57';
+      ctx.fillText('HARD', W - 62, 36);
+    }
+    // rainbow power
+    if (G.p.power > 0) {
+      ctx.save(); ctx.translate(ox, 0);
+      const hue = (performance.now() / 1000 * 300) % 360;
+      ctx.fillStyle = 'rgba(8,30,40,0.55)';
+      ctx.beginPath(); ctx.roundRect(12, 62, 150, 30, 8); ctx.fill();
+      ctx.font = '13px "Dela Gothic One", sans-serif';
+      ctx.fillStyle = `hsl(${hue},100%,72%)`;
+      ctx.fillText('無敵 ×2', 22, 74);
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.roundRect(22, 83, 130, 4, 2); ctx.fill();
+      ctx.fillStyle = `hsl(${hue},100%,65%)`;
+      ctx.beginPath(); ctx.roundRect(22, 83, 130 * clamp(G.p.power / (G.p.powerMax || POWER_TIME), 0, 1), 4, 2); ctx.fill();
+      ctx.font = '700 12px "Zen Maru Gothic", sans-serif'; ctx.fillStyle = '#e4f2ef';
+      ctx.textAlign = 'right'; ctx.fillText(G.p.power.toFixed(1) + '秒', 152, 74); ctx.textAlign = 'left';
+      ctx.restore();
+    }
+    // forecast
+    const d = dishFor(G.score), next = DISHES[DISHES.indexOf(d) + 1];
+    ctx.fillStyle = 'rgba(8,30,40,0.55)';
+    const dName = save.got.includes(d.id) ? d.name : '？？？'; // まだ出会っていない料理は伏せる
+    let label = 'このままだと：' + dName + (next ? `（あと${next.min - G.score}ptで次の料理）` : '');
+    // スティック操作中は左下・右下がコントローラーで隠れるので、予想は上中央へ・メーターはボタン側で表示
+    const sm = stickMode();
+    let fsz = sm ? 12 : 13;
+    ctx.font = `700 ${fsz}px "Zen Maru Gothic", sans-serif`;
+    let lw = ctx.measureText(label).width;
+    let fx = sm ? (W - lw - 24) / 2 : 12;
+    const fy = sm ? 12 : H - 40;
+    if (sm) {
+      // 上段ではスコア欄と残り時間欄の間に収める。入らなければ短い表記・小さい文字にする
+      const minX = 12 + ox + scoreW + 10, maxR = W - 172 - 10;
+      const fits = () => lw + 24 <= maxR - minX;
+      if (!fits()) { label = 'このままだと：' + dName; lw = ctx.measureText(label).width; }
+      if (!fits()) { fsz = 10; ctx.font = `700 ${fsz}px "Zen Maru Gothic", sans-serif`; lw = ctx.measureText(label).width; }
+      fx = clamp((W - lw - 24) / 2, minX, maxR - lw - 24);
+    }
+    ctx.beginPath(); ctx.roundRect(fx, fy, lw + 24, 28, 8); ctx.fill();
+    ctx.fillStyle = '#e4f2ef'; ctx.fillText(label, fx + 12, fy + 14);
+    if (sm) { ctx.restore(); return; }
+    // dash meter
+    const c = clamp(1 - G.p.cool / 1.0, 0, 1);
+    ctx.fillStyle = 'rgba(8,30,40,0.55)';
+    ctx.beginPath(); ctx.roundRect(W - 112, H - 40, 100, 28, 8); ctx.fill();
+    ctx.fillStyle = c >= 1 ? '#ff7a57' : '#5b7a80';
+    ctx.beginPath(); ctx.roundRect(W - 104, H - 22, 84 * c, 5, 3); ctx.fill();
+    ctx.font = '700 11px "Zen Maru Gothic", sans-serif';
+    ctx.fillStyle = c >= 1 ? '#ffc3b0' : '#88adac';
+    ctx.fillText('はねる', W - 104, H - 31);
+    ctx.restore();
+  }
+
+  function render(t, dt) {
+    ctx.save();
+    if (G.shake > 0 && !reduced) ctx.translate(rnd(-5, 5) * G.shake * 3, rnd(-5, 5) * G.shake * 3);
+    drawBackground(t, dt);
+
+    if (state === 'title') {
+      const x = W / 2 + Math.sin(t * 0.6) * 180, y = H / 2 + 20 + Math.sin(t * 1.3) * 30;
+      const dir = Math.cos(t * 0.6) >= 0 ? 1 : -1;
+      for (let i = 0; i < 6; i++) {
+        const px = 120 + i * 115, py = 110 + ((i * 71) % 250);
+        drawPlankton({ x: px + Math.sin(t + i) * 8, y: py, age: 1, life: 5, ph: i }, t);
+      }
+      drawShrimp(ctx, x, y, 1.6, dir, t, { skin, hat });
+    } else {
+      for (const q of G.plank) drawPlankton(q, t);
+      for (const k of G.krill) {
+        ctx.save(); ctx.shadowColor = '#ffd35a'; ctx.shadowBlur = 14;
+        drawShrimp(ctx, k.x, k.y, 0.5, Math.sign(k.vx), t * 2, { gold: true });
+        ctx.restore();
+      }
+      for (const h of G.hooks) drawHook(h);
+      for (const f of G.fish) {
+        if (f.warn > 0) drawWarn(f, t);
+        else if (f.maguro) drawMaguro(f, t);
+        else drawFish(f, t);
+      }
+      if (G.tai) drawTai(G.tai, t);
+      if (G.boat) { for (const n of G.boat.list) drawNet(n, G.boat, t); drawBoat(G.boat, t); }
+      if (G.gold) drawGoldFood(G.gold, t);
+      if (G.scale) drawTaiScale(G.scale, t);
+      const p = G.p;
+      const powered = p.power > 0 && (state === 'play' || state === 'paused');
+      const blink = !powered && p.inv > 0 && p.dash <= 0 && Math.floor(t * 12) % 2 === 0;
+      if (powered) {
+        // 中心を透明にしたリング状のオーラ（えびの輪郭を塗りつぶさない）
+        const hue = (t * 300) % 360, r = 14 * p.vs * 3.4;
+        const fading = p.power < 2 && Math.floor(t * 8) % 2 === 0;
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        g.addColorStop(0, `hsla(${hue},100%,70%,0)`);
+        g.addColorStop(0.55, `hsla(${hue},100%,70%,${fading ? 0.15 : 0.4})`);
+        g.addColorStop(1, `hsla(${hue},100%,60%,0)`);
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+      }
+      if (!blink) drawShrimp(ctx, p.x, p.y, p.vs, p.dir, t, { curl: p.dash > 0 ? 1 : 0, hue: powered ? (t * 300) % 360 : null, skin, hat });
+      for (const f of G.fx) {
+        ctx.globalAlpha = clamp(f.life * 2, 0, 1); ctx.fillStyle = f.col;
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.font = '18px "Dela Gothic One", sans-serif'; ctx.textAlign = 'center';
+      for (const tx of G.texts) {
+        ctx.globalAlpha = clamp(tx.life * 1.6, 0, 1); ctx.fillStyle = tx.col; ctx.fillText(tx.txt, tx.x, tx.y);
+      }
+      if (G.banner) {
+        ctx.globalAlpha = clamp(G.banner.life * 2, 0, 1);
+        ctx.font = '26px "Dela Gothic One", sans-serif';
+        ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(8,30,40,0.8)'; ctx.lineJoin = 'round';
+        ctx.strokeText(G.banner.txt, W / 2, H / 2 - 90);
+        ctx.fillStyle = G.banner.col; ctx.fillText(G.banner.txt, W / 2, H / 2 - 90);
+      }
+      ctx.globalAlpha = 1; ctx.textAlign = 'left';
+      drawHUD();
+    }
+    ctx.restore();
+  }
+
+  let last = performance.now(), dashCooling = false;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const t = now / 1000;
+    if (state === 'play') {
+      update(dt, t);
+      const danger = (G.tai && !G.tai.flee) || (G.boat && G.boat.phase !== 'leave');
+      if (state === 'play') Sound.play(G.p.power > 0 ? 'power' : danger ? 'tai' : 'sea');
+      const cooling = G.p.cool > 0;
+      if (cooling !== dashCooling) { dashCooling = cooling; $('dashFloat').classList.toggle('cooling', cooling); }
+    }
+    if (state === 'play' || state === 'result') updateFx(dt); // ポーズ中は時間を止める
+    render(t, dt);
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- dishes ----------
+  const dc = $('dish'), dctx = dc.getContext('2d');
+  const DW = 320, DH = 200;
+  dc.width = DW * dpr; dc.height = DH * dpr;
+
+  function plate(c, cx, cy, rx, ry) {
+    c.fillStyle = 'rgba(20,47,56,0.12)';
+    c.beginPath(); c.ellipse(cx + 3, cy + 7, rx, ry, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#ffffff'; c.strokeStyle = '#c9d6d3'; c.lineWidth = 1.5;
+    c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.strokeStyle = '#e3ebe9';
+    c.beginPath(); c.ellipse(cx, cy, rx * 0.8, ry * 0.8, 0, 0, Math.PI * 2); c.stroke();
+  }
+  function curl(c, x, y, r, rot, col = '#ff8a66') {
+    c.save(); c.translate(x, y); c.rotate(rot); c.lineCap = 'round';
+    c.strokeStyle = col; c.lineWidth = r * 0.95;
+    c.beginPath(); c.arc(0, 0, r, 0.2, Math.PI * 1.55); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.45)'; c.lineWidth = r * 0.25; c.setLineDash([2, r * 0.45]);
+    c.beginPath(); c.arc(0, 0, r * 1.1, 0.35, Math.PI * 1.45); c.stroke(); c.setLineDash([]);
+    c.fillStyle = '#e0401f';
+    const ex = Math.cos(0.2) * r, ey = Math.sin(0.2) * r;
+    c.beginPath(); c.moveTo(ex, ey); c.lineTo(ex + r * 0.7, ey + r * 0.2); c.lineTo(ex + r * 0.2, ey + r * 0.75); c.closePath(); c.fill();
+    c.restore();
+  }
+  function lemon(c, x, y, r, rot) {
+    c.save(); c.translate(x, y); c.rotate(rot);
+    c.fillStyle = '#ffe066'; c.beginPath(); c.arc(0, 0, r, 0, Math.PI); c.closePath(); c.fill();
+    c.fillStyle = '#fff6c2'; c.beginPath(); c.arc(0, 0, r * 0.75, 0, Math.PI); c.closePath(); c.fill();
+    c.strokeStyle = '#ffe066'; c.lineWidth = 1;
+    for (let k = 1; k < 4; k++) { const a = k * Math.PI / 4; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * r * 0.75, Math.sin(a) * r * 0.75); c.stroke(); }
+    c.restore();
+  }
+
+  const DRAW = {
+    senbei(c, R) {
+      plate(c, 160, 110, 130, 70);
+      const pos = [[110, 95], [160, 88], [210, 98], [135, 128], [190, 130]];
+      for (const [x, y] of pos) {
+        c.fillStyle = '#f3c6b2'; c.beginPath(); c.ellipse(x, y, 30, 18, R() - 0.5, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = '#e4a58c'; c.lineWidth = 1.2; c.stroke();
+        c.fillStyle = '#e07a60';
+        for (let i = 0; i < 6; i++) { c.beginPath(); c.arc(x + (R() - 0.5) * 40, y + (R() - 0.5) * 20, 1.8, 0, Math.PI * 2); c.fill(); }
+      }
+    },
+    kakiage(c, R) {
+      plate(c, 160, 115, 130, 68);
+      c.fillStyle = '#f2f0e6'; c.beginPath(); c.ellipse(160, 130, 70, 22, 0, 0, Math.PI * 2); c.fill();
+      for (let i = 0; i < 70; i++) {
+        const a = R() * Math.PI * 2, d = Math.sqrt(R());
+        c.fillStyle = R() < 0.5 ? '#e7ae4a' : '#d4912e';
+        c.beginPath(); c.arc(160 + Math.cos(a) * d * 58, 105 + Math.sin(a) * d * 32, rnd(5, 9), 0, Math.PI * 2); c.fill();
+      }
+      for (let i = 0; i < 16; i++) {
+        const a = R() * Math.PI * 2, d = Math.sqrt(R());
+        curl(c, 160 + Math.cos(a) * d * 50, 105 + Math.sin(a) * d * 26, 3.5, R() * 6, '#ff8f78');
+      }
+      c.fillStyle = '#5da146';
+      for (let i = 0; i < 3; i++) { c.beginPath(); c.ellipse(130 + i * 28, 92 + (i % 2) * 18, 7, 4, R() * 3, 0, Math.PI * 2); c.fill(); }
+      c.fillStyle = '#f4f4f0'; c.beginPath(); c.arc(240, 130, 10, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#9ccf5a'; c.beginPath(); c.arc(242, 128, 4, 0, Math.PI * 2); c.fill();
+    },
+    fry(c, R) {
+      plate(c, 160, 112, 135, 72);
+      c.strokeStyle = '#8cc85a'; c.lineWidth = 1.6;
+      for (let i = 0; i < 40; i++) { const x = 70 + R() * 50, y = 80 + R() * 50; c.beginPath(); c.moveTo(x, y); c.lineTo(x + R() * 20 - 5, y + R() * 10 - 5); c.stroke(); }
+      for (let i = 0; i < 3; i++) {
+        c.save(); c.translate(175 + i * 8, 90 + i * 22); c.rotate(-0.28 + i * 0.05);
+        c.fillStyle = '#e0401f';
+        c.beginPath(); c.moveTo(48, 0); c.lineTo(70, -12); c.lineTo(66, 0); c.lineTo(70, 12); c.closePath(); c.fill();
+        c.fillStyle = '#d99436'; c.beginPath(); c.roundRect(-58, -11, 108, 22, 11); c.fill();
+        c.fillStyle = '#eab35a';
+        for (let k = 0; k < 18; k++) { c.beginPath(); c.arc(-52 + R() * 96, -8 + R() * 16, 2.2, 0, Math.PI * 2); c.fill(); }
+        c.restore();
+      }
+      lemon(c, 88, 142, 16, -0.4);
+      c.fillStyle = '#fbfbf2'; c.beginPath(); c.ellipse(118, 150, 14, 9, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#9ccf5a'; c.beginPath(); c.arc(115, 148, 1.5, 0, 7); c.arc(121, 151, 1.5, 0, 7); c.fill();
+    },
+    chili(c, R) {
+      plate(c, 160, 112, 135, 72);
+      c.fillStyle = '#d9401f'; c.beginPath(); c.ellipse(160, 110, 100, 50, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#ec6a3c'; c.beginPath(); c.ellipse(152, 104, 80, 36, 0, 0, Math.PI * 2); c.fill();
+      const pos = [[115, 100], [155, 88], [195, 102], [135, 125], [178, 128], [218, 118], [100, 122]];
+      for (const [x, y] of pos) curl(c, x, y, 11, R() * 6, '#ffa184');
+      c.fillStyle = '#6fbf3f';
+      for (let i = 0; i < 16; i++) { c.beginPath(); c.arc(90 + R() * 140, 85 + R() * 50, 2.4, 0, Math.PI * 2); c.fill(); }
+    },
+    tendon(c, R) {
+      // bowl
+      c.fillStyle = 'rgba(20,47,56,0.14)'; c.beginPath(); c.ellipse(163, 176, 90, 14, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#2b1d1a';
+      c.beginPath(); c.moveTo(62, 112); c.bezierCurveTo(70, 180, 250, 180, 258, 112); c.closePath(); c.fill();
+      c.fillStyle = '#9a241c'; c.fillRect(70, 150, 180, 4);
+      // rice
+      c.fillStyle = '#fbfbf6'; c.beginPath(); c.ellipse(160, 112, 98, 22, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#c98a3c'; c.beginPath(); c.ellipse(160, 114, 70, 12, 0, 0, Math.PI * 2); c.fill();
+      // tempura shrimp
+      const fr = [[-0.9, 130], [-0.55, 165], [-1.15, 195]];
+      for (const [rot, x] of fr) {
+        c.save(); c.translate(x, 112); c.rotate(rot);
+        c.fillStyle = '#e0401f';
+        c.beginPath(); c.moveTo(-10, -92); c.lineTo(-22, -112); c.lineTo(-8, -104); c.lineTo(4, -114); c.closePath(); c.fill();
+        c.fillStyle = '#e7b04c';
+        c.beginPath(); c.roundRect(-14, -96, 28, 100, 14); c.fill();
+        c.fillStyle = '#f5cf7a';
+        for (let k = 0; k < 14; k++) { c.beginPath(); c.arc(-14 + R() * 28, -92 + R() * 92, 3.5, 0, Math.PI * 2); c.fill(); }
+        c.restore();
+      }
+      c.fillStyle = '#4f9b3a'; c.beginPath(); c.ellipse(222, 104, 20, 7, 0.4, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = '#7a3f18'; c.lineWidth = 3; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(100, 108); c.quadraticCurveTo(150, 125, 215, 112); c.stroke();
+    },
+    ajillo(c, R) {
+      c.fillStyle = '#2a2a2e'; c.beginPath(); c.roundRect(236, 100, 70, 16, 8); c.fill();
+      c.fillStyle = 'rgba(20,47,56,0.14)'; c.beginPath(); c.ellipse(152, 118, 102, 62, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#333338'; c.beginPath(); c.ellipse(150, 108, 102, 62, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#d9a032'; c.beginPath(); c.ellipse(150, 108, 88, 50, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = 'rgba(255,230,140,0.55)'; c.beginPath(); c.ellipse(138, 96, 60, 28, 0, 0, Math.PI * 2); c.fill();
+      const pos = [[110, 100], [150, 86], [190, 104], [125, 128], [170, 130]];
+      for (const [x, y] of pos) curl(c, x, y, 12, R() * 6, '#ff8a66');
+      c.fillStyle = '#fbf6e4';
+      for (let i = 0; i < 7; i++) { c.beginPath(); c.ellipse(90 + R() * 120, 80 + R() * 55, 5, 3.5, R() * 3, 0, Math.PI * 2); c.fill(); }
+      c.fillStyle = '#c4161c';
+      for (let i = 0; i < 3; i++) { c.beginPath(); c.ellipse(105 + i * 45, 118 - i * 16, 10, 3, R() * 3, 0, Math.PI * 2); c.fill(); }
+      c.fillStyle = '#4c9a3c';
+      for (let i = 0; i < 18; i++) { c.beginPath(); c.arc(80 + R() * 140, 75 + R() * 65, 1.8, 0, Math.PI * 2); c.fill(); }
+      // bubbles in oil
+      c.strokeStyle = 'rgba(255,248,210,0.9)'; c.lineWidth = 1;
+      for (let i = 0; i < 10; i++) { c.beginPath(); c.arc(80 + R() * 140, 75 + R() * 65, 2 + R() * 2, 0, Math.PI * 2); c.stroke(); }
+    },
+    ise(c, R) {
+      plate(c, 160, 118, 145, 70);
+      c.fillStyle = '#5c9a3e';
+      for (let i = 0; i < 5; i++) { c.beginPath(); c.ellipse(60 + i * 8, 140 - i * 6, 20, 7, -0.5 + i * 0.2, 0, Math.PI * 2); c.fill(); }
+      c.save(); c.shadowColor = 'rgba(20,47,56,0.25)'; c.shadowBlur = 6; c.shadowOffsetY = 3;
+      drawShrimp(c, 150, 112, 2.6, 1, 1.2, { cooked: true, curl: 0.25 });
+      c.restore();
+      lemon(c, 250, 140, 14, -0.2);
+      // gold leaf
+      c.fillStyle = '#e8c35a';
+      for (let i = 0; i < 6; i++) { c.fillRect(120 + R() * 80, 88 + R() * 30, 3, 3); }
+    },
+  };
+
+  DRAW.nitsuke = (c, R) => {
+    // 黒っぽい楕円の煮魚皿
+    c.fillStyle = 'rgba(20,47,56,0.16)'; c.beginPath(); c.ellipse(163, 124, 140, 62, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#2d2a33'; c.beginPath(); c.ellipse(160, 116, 140, 62, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#3d3944'; c.beginPath(); c.ellipse(160, 116, 118, 50, 0, 0, Math.PI * 2); c.fill();
+    // 煮汁
+    c.fillStyle = '#5a2a12'; c.beginPath(); c.ellipse(160, 120, 104, 40, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(255,200,120,0.18)'; c.beginPath(); c.ellipse(140, 128, 60, 12, 0, 0, Math.PI * 2); c.fill();
+    // 鯛
+    c.save(); c.translate(160, 110);
+    c.fillStyle = '#7a3017';
+    c.beginPath(); c.moveTo(-78, 0); c.lineTo(-108, -24); c.quadraticCurveTo(-96, 0, -108, 24); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-50, -22);
+    for (let i = 0; i <= 8; i++) c.lineTo(-50 + i * 11, -36 - (i % 2 ? 8 : 0));
+    c.lineTo(40, -22); c.closePath(); c.fill();
+    const g = c.createLinearGradient(0, -34, 0, 34);
+    g.addColorStop(0, '#9c3a1a'); g.addColorStop(0.55, '#b8562a'); g.addColorStop(1, '#d88a4e');
+    c.fillStyle = g;
+    c.beginPath(); c.moveTo(82, 4);
+    c.bezierCurveTo(66, -46, -50, -44, -80, 0);
+    c.bezierCurveTo(-50, 38, 60, 38, 82, 4); c.fill();
+    c.strokeStyle = 'rgba(60,15,5,0.5)'; c.lineWidth = 2;
+    c.beginPath(); c.arc(16, 0, 26, -0.9, 0.9); c.stroke();
+    for (const x of [-40, -20, 0]) { c.beginPath(); c.moveTo(x - 6, -14); c.lineTo(x + 6, 10); c.stroke(); }
+    c.fillStyle = 'rgba(255,230,190,0.35)'; c.beginPath(); c.ellipse(0, -16, 40, 6, -0.05, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#f2e6d0'; c.beginPath(); c.arc(54, -9, 6, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#3a1a0c'; c.beginPath(); c.arc(55, -9, 3, 0, Math.PI * 2); c.fill();
+    c.restore();
+    // 針しょうがとごぼう
+    c.strokeStyle = '#f3dc86'; c.lineWidth = 1.6; c.lineCap = 'round';
+    for (let i = 0; i < 9; i++) { const x = 150 + R() * 30, y = 84 + R() * 8; c.beginPath(); c.moveTo(x, y); c.lineTo(x + R() * 14 - 7, y - 10 - R() * 6); c.stroke(); }
+    c.strokeStyle = '#6b4a2a'; c.lineWidth = 5;
+    for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(210 + i * 9, 140); c.lineTo(250 + i * 9, 128); c.stroke(); }
+    c.fillStyle = '#5c9a3e'; c.beginPath(); c.ellipse(96, 146, 16, 6, -0.3, 0, Math.PI * 2); c.fill();
+  };
+
+  DRAW.bait = (c, R) => {
+    c.fillStyle = '#d5e9ec'; c.beginPath(); c.roundRect(50, 6, 220, 188, 18); c.fill();
+    c.strokeStyle = 'rgba(90,140,150,0.5)'; c.lineWidth = 1.2;
+    for (let i = 0; i < 6; i++) { c.beginPath(); c.arc(90 + R() * 150, 30 + R() * 140, 2 + R() * 4, 0, Math.PI * 2); c.stroke(); }
+    // line + float
+    c.strokeStyle = '#6b7f86'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(160, 6); c.lineTo(160, 120); c.stroke();
+    c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(160, 46, 10, 18, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#e8412c'; c.beginPath(); c.ellipse(160, 46, 10, 18, 0, Math.PI, Math.PI * 2); c.fill();
+    // hook
+    c.strokeStyle = '#8c979c'; c.lineWidth = 3; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(160, 116); c.lineTo(160, 156); c.arc(147, 156, 13, 0, Math.PI * 0.95); c.stroke();
+    // shrimp on the hook
+    drawShrimp(c, 150, 146, 1.1, -1, 0.5, { curl: 0.9, skin, hat });
+    c.strokeStyle = '#8c979c'; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(134, 158); c.lineTo(134, 146); c.lineTo(139, 151); c.stroke();
+  };
+
+  DRAW.bisque = (c, R) => {
+    plate(c, 160, 112, 138, 72);
+    // bread
+    c.save(); c.translate(250, 140); c.rotate(-0.3);
+    c.fillStyle = '#d9a45a'; c.beginPath(); c.roundRect(-26, -12, 52, 24, 10); c.fill();
+    c.fillStyle = '#f6e3b8'; c.beginPath(); c.roundRect(-22, -8, 44, 16, 8); c.fill();
+    c.restore();
+    // bowl + soup
+    c.fillStyle = '#ffffff'; c.strokeStyle = '#c9d6d3'; c.lineWidth = 1.5;
+    c.beginPath(); c.ellipse(150, 106, 88, 50, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    const g = c.createRadialGradient(140, 98, 10, 150, 106, 75);
+    g.addColorStop(0, '#f39a5c'); g.addColorStop(1, '#c9582a');
+    c.fillStyle = g; c.beginPath(); c.ellipse(150, 106, 72, 40, 0, 0, Math.PI * 2); c.fill();
+    // cream swirl
+    c.strokeStyle = 'rgba(255,248,236,0.9)'; c.lineWidth = 3; c.lineCap = 'round';
+    c.beginPath();
+    for (let a = 0; a < Math.PI * 5; a += 0.2) { const r = 4 + a * 3.2; const x = 150 + Math.cos(a) * r, y = 106 + Math.sin(a) * r * 0.55; a === 0 ? c.moveTo(x, y) : c.lineTo(x, y); }
+    c.stroke();
+    curl(c, 170, 96, 10, 0.6, '#ff8a66');
+    c.fillStyle = '#4c9a3c';
+    for (let i = 0; i < 10; i++) { c.beginPath(); c.arc(110 + R() * 80, 85 + R() * 40, 1.8, 0, Math.PI * 2); c.fill(); }
+  };
+  DRAW.thermidor = (c, R) => {
+    plate(c, 160, 112, 140, 74);
+    for (const [x, y, rot] of [[130, 100, -0.25], [190, 124, -0.25]]) {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      // shell
+      c.fillStyle = '#d8401f'; c.beginPath(); c.ellipse(0, 0, 62, 22, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#b8300f';
+      c.beginPath(); c.moveTo(-58, 0); c.lineTo(-84, -14); c.lineTo(-78, 0); c.lineTo(-84, 14); c.closePath(); c.fill();
+      // gratin
+      c.fillStyle = '#f0c46a'; c.beginPath(); c.ellipse(4, -2, 50, 15, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#c9812e';
+      for (let i = 0; i < 12; i++) { c.beginPath(); c.arc(-40 + R() * 86, -10 + R() * 16, 1.5 + R() * 2.5, 0, Math.PI * 2); c.fill(); }
+      c.fillStyle = '#4c9a3c';
+      for (let i = 0; i < 6; i++) { c.beginPath(); c.arc(-30 + R() * 66, -8 + R() * 12, 1.4, 0, Math.PI * 2); c.fill(); }
+      c.restore();
+    }
+    // claw
+    c.fillStyle = '#d8401f';
+    c.beginPath(); c.ellipse(236, 86, 20, 11, 0.5, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.moveTo(250, 76); c.lineTo(270, 64); c.lineTo(258, 84); c.closePath(); c.fill();
+    lemon(c, 80, 146, 15, -0.3);
+  };
+  DRAW.funamori = (c, R) => {
+    const leaf = (x, y, len, w, rot, col) => {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      c.fillStyle = col; c.beginPath(); c.moveTo(0, 0);
+      c.quadraticCurveTo(len * 0.45, -w, len, 0); c.quadraticCurveTo(len * 0.45, w, 0, 0); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(3, 0); c.lineTo(len - 5, 0); c.stroke();
+      c.restore();
+    };
+    // 立てかけて扇状に並べた刺身
+    const fan = (cx, cy, n, spread, body, edge, stripe) => {
+      for (let i = 0; i < n; i++) {
+        const a = -spread / 2 + spread * i / (n - 1);
+        c.save(); c.translate(cx + (i - (n - 1) / 2) * 6, cy); c.rotate(a);
+        c.fillStyle = body; c.beginPath(); c.roundRect(-9, -34, 18, 34, [9, 9, 3, 3]); c.fill();
+        if (edge) { c.fillStyle = edge; c.beginPath(); c.roundRect(-9, -34, 18, 6, [9, 9, 0, 0]); c.fill(); }
+        if (stripe) {
+          c.strokeStyle = stripe; c.lineWidth = 1.3;
+          for (let k = 0; k < 4; k++) { c.beginPath(); c.moveTo(-8, -24 + k * 7); c.lineTo(8, -29 + k * 7); c.stroke(); }
+        }
+        c.fillStyle = 'rgba(255,255,255,0.28)'; c.fillRect(-5, -28, 3, 22);
+        c.strokeStyle = 'rgba(60,20,20,0.18)'; c.lineWidth = 1;
+        c.beginPath(); c.roundRect(-9, -34, 18, 34, [9, 9, 3, 3]); c.stroke();
+        c.restore();
+      }
+    };
+
+    // 影
+    c.fillStyle = 'rgba(20,47,56,0.16)'; c.beginPath(); c.ellipse(158, 174, 128, 11, 0, 0, Math.PI * 2); c.fill();
+    // 舟の胴（斜め上から）: 右の舳先が反り上がる
+    const hullPath = () => {
+      c.beginPath(); c.moveTo(26, 108);
+      c.bezierCurveTo(32, 154, 90, 170, 158, 170);
+      c.bezierCurveTo(228, 170, 268, 152, 280, 116);
+      c.bezierCurveTo(288, 84, 294, 50, 304, 30);
+      c.quadraticCurveTo(311, 20, 300, 21);
+      c.quadraticCurveTo(286, 58, 274, 106);
+      c.closePath();
+    };
+    const hg = c.createLinearGradient(0, 100, 0, 172);
+    hg.addColorStop(0, '#b07a42'); hg.addColorStop(1, '#6a421f');
+    c.fillStyle = hg; hullPath(); c.fill();
+    c.save(); hullPath(); c.clip();
+    c.strokeStyle = 'rgba(60,35,15,0.35)'; c.lineWidth = 1.5;
+    for (let y = 122; y < 175; y += 11) { c.beginPath(); c.moveTo(10, y - 8); c.quadraticCurveTo(160, y + 16, 320, y - 30); c.stroke(); }
+    c.restore();
+    c.strokeStyle = '#d9a466'; c.lineWidth = 2.5; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(276, 104); c.quadraticCurveTo(288, 58, 302, 23); c.stroke();
+    // 縁と内側
+    c.fillStyle = '#c99256'; c.beginPath(); c.ellipse(150, 108, 124, 24, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#4a2c14'; c.beginPath(); c.ellipse(150, 109, 114, 18, 0, 0, Math.PI * 2); c.fill();
+    // 大根のツマ
+    c.fillStyle = '#eef0ea'; c.beginPath(); c.ellipse(150, 104, 106, 17, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#ffffff'; c.lineWidth = 1.2;
+    for (let i = 0; i < 90; i++) {
+      const a = R() * Math.PI * 2, d = Math.sqrt(R());
+      const x = 150 + Math.cos(a) * d * 100, y = 104 + Math.sin(a) * d * 14;
+      c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + 4, y - 4, x + R() * 10 - 5, y - 7); c.stroke();
+    }
+    // 大葉（刺身の後ろに立てる）
+    for (const [x, rot] of [[62, -2.0], [80, -1.35], [118, -1.9], [134, -1.25], [170, -1.85], [188, -1.3]]) leaf(x, 104, 42, 13, rot, '#3f8f3a');
+    // 伊勢えび（舳先側に頭を起こして飾る）
+    c.save(); c.translate(236, 78); c.rotate(0.3);
+    c.shadowColor = 'rgba(20,47,56,0.3)'; c.shadowBlur = 6; c.shadowOffsetY = 3;
+    drawShrimp(c, 0, 0, 1.75, -1, 0.9, { cooked: true, curl: 0.2 });
+    c.restore();
+    // 刺身: まぐろ・鯛・サーモン
+    fan(72, 108, 5, 0.9, '#c61f3b', null, null);
+    fan(126, 106, 5, 0.8, '#fae6df', '#e0606c', null);
+    fan(180, 108, 5, 0.8, '#f7894c', null, 'rgba(255,240,225,0.8)');
+    // 甘えび
+    curl(c, 104, 118, 7, 0.3, '#ffb3a3'); curl(c, 156, 120, 7, 2.2, '#ffb3a3');
+    // いくら（大葉の上）
+    leaf(206, 122, 30, 10, -0.25, '#4f9b3a');
+    for (let i = 0; i < 9; i++) {
+      const x = 214 + (i % 3) * 6 + R() * 2, y = 112 + Math.floor(i / 3) * 5 + R() * 2;
+      c.fillStyle = '#f26a1b'; c.beginPath(); c.arc(x, y, 3.4, 0, Math.PI * 2); c.fill();
+      c.fillStyle = 'rgba(255,240,200,0.9)'; c.beginPath(); c.arc(x - 1, y - 1.2, 1, 0, Math.PI * 2); c.fill();
+    }
+    // わさびと菊
+    c.fillStyle = '#9cc56a'; c.beginPath(); c.ellipse(44, 110, 10, 6, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#7fae4c'; for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(38 + R() * 12, 107 + R() * 6, 1, 0, Math.PI * 2); c.fill(); }
+    c.save(); c.translate(248, 116);
+    c.fillStyle = '#f7c52b';
+    for (let k = 0; k < 14; k++) { c.rotate(Math.PI / 7); c.beginPath(); c.ellipse(5, 0, 5, 1.8, 0, 0, Math.PI * 2); c.fill(); }
+    c.fillStyle = '#e39a12'; c.beginPath(); c.arc(0, 0, 3, 0, Math.PI * 2); c.fill();
+    c.restore();
+    // きらめき（竜宮らしさ）
+    c.fillStyle = '#fff3b0';
+    for (const [x, y, r] of [[40, 50, 5], [120, 34, 4], [200, 26, 3.5]]) {
+      c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r * 0.3, y - r * 0.3); c.lineTo(x + r, y); c.lineTo(x + r * 0.3, y + r * 0.3);
+      c.lineTo(x, y + r); c.lineTo(x - r * 0.3, y + r * 0.3); c.lineTo(x - r, y); c.lineTo(x - r * 0.3, y - r * 0.3); c.closePath(); c.fill();
+    }
+  };
+  DRAW.golden = (c, R) => {
+    c.fillStyle = 'rgba(20,47,56,0.18)'; c.beginPath(); c.ellipse(163, 122, 140, 66, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#1e2a33'; c.beginPath(); c.ellipse(160, 114, 140, 66, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#c9a23a'; c.lineWidth = 2;
+    c.beginPath(); c.ellipse(160, 114, 128, 58, 0, 0, Math.PI * 2); c.stroke();
+    // glow
+    const g = c.createRadialGradient(160, 108, 10, 160, 108, 120);
+    g.addColorStop(0, 'rgba(255,222,110,0.55)'); g.addColorStop(1, 'rgba(255,222,110,0)');
+    c.fillStyle = g; c.beginPath(); c.ellipse(160, 108, 130, 60, 0, 0, Math.PI * 2); c.fill();
+    // giant fry
+    c.save(); c.translate(158, 110); c.rotate(-0.18);
+    c.fillStyle = '#e0401f';
+    c.beginPath(); c.moveTo(86, 0); c.lineTo(118, -20); c.lineTo(110, 0); c.lineTo(118, 20); c.closePath(); c.fill();
+    const fg = c.createLinearGradient(0, -22, 0, 22);
+    fg.addColorStop(0, '#fff2a8'); fg.addColorStop(0.5, '#f2c230'); fg.addColorStop(1, '#c98f14');
+    c.fillStyle = fg; c.beginPath(); c.roundRect(-104, -22, 196, 44, 22); c.fill();
+    c.fillStyle = '#fff6c8';
+    for (let i = 0; i < 40; i++) { c.beginPath(); c.arc(-98 + R() * 184, -18 + R() * 36, 1.5 + R() * 2, 0, Math.PI * 2); c.fill(); }
+    c.restore();
+    // sparkles
+    c.fillStyle = '#fff3b0';
+    for (let i = 0; i < 9; i++) {
+      const x = 40 + R() * 240, y = 50 + R() * 110, r = 3 + R() * 5;
+      c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r * 0.3, y - r * 0.3); c.lineTo(x + r, y); c.lineTo(x + r * 0.3, y + r * 0.3);
+      c.lineTo(x, y + r); c.lineTo(x - r * 0.3, y + r * 0.3); c.lineTo(x - r, y); c.lineTo(x - r * 0.3, y - r * 0.3); c.closePath(); c.fill();
+    }
+  };
+
+  function paintDish(id) {
+    dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dctx.clearRect(0, 0, DW, DH);
+    DRAW[id](dctx, seeded(7 + id.length * 131));
+  }
+
+  // ---------- flow ----------
+  function renderMenu() {
+    const n = `${save.got.length}/${ALL_DISHES.length}`;
+    $('menuBtnCount').textContent = n;
+    $('menuBtn').setAttribute('aria-label', `お品書き（${n}）`);
+  }
+
+  // お品書きパネル: 出会ったエンディングを料理の絵つきで見返す
+  const dishCond = d => d === BAD_DISH ? '鯛に食べられたら' : d === BAD_NET ? '網にかかったら（HARD）' : `${d.min}pt〜`;
+  function drawDishTo(cvs, w, h, d, got) {
+    cvs.width = w * dpr; cvs.height = h * dpr;
+    const c = cvs.getContext('2d');
+    c.setTransform(dpr * w / DW, 0, 0, dpr * h / DH, 0, 0);
+    DRAW[d.id](c, seeded(7 + d.id.length * 131));
+    if (!got) {
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.globalCompositeOperation = 'source-in';
+      c.fillStyle = 'rgba(140,175,180,0.3)'; c.fillRect(0, 0, cvs.width, cvs.height);
+    }
+  }
+  function showMenuDetail(d) {
+    const got = save.got.includes(d.id);
+    $('mnGrid').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === d.id)));
+    drawDishTo($('mnBig'), 240, 150, d, got);
+    if (got) setDishName($('mnName'), d); else $('mnName').textContent = '？？？';
+    $('mnBlurb').textContent = got ? d.blurb : 'まだ出会っていない一皿。';
+    $('mnCond').textContent = `条件：${dishCond(d)}`;
+    $('mnDetail').hidden = false;
+  }
+  function renderMenuPanel() {
+    const grid = $('mnGrid');
+    grid.innerHTML = '';
+    $('mnCount').textContent = `${save.got.length} / ${ALL_DISHES.length}`;
+    for (const d of ALL_DISHES) {
+      const got = save.got.includes(d.id);
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.id = d.id; b.setAttribute('aria-pressed', 'false');
+      if (!got) b.className = 'locked';
+      const cvs = document.createElement('canvas');
+      drawDishTo(cvs, 96, 60, d, got);
+      const name = document.createElement('span'); if (got) setDishName(name, d); else name.textContent = '？？？';
+      const cond = document.createElement('small'); cond.textContent = dishCond(d);
+      b.append(cvs, name, cond);
+      b.addEventListener('click', () => {
+        showMenuDetail(d);
+        $('menuPanel').scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+      });
+      li.appendChild(b); grid.appendChild(li);
+    }
+    const first = ALL_DISHES.find(d => save.got.includes(d.id));
+    if (first) showMenuDetail(first); else $('mnDetail').hidden = true;
+    $('mnEmpty').hidden = !!first;
+  }
+
+  function startGame() {
+    newGame();
+    for (const k in keys) keys[k] = false;
+    ptr.active = false; ptr.hold = false;
+    $('dashFloat').hidden = false;
+    $('rankBtn').hidden = true; $('creditBox').hidden = true; rankPanel.hidden = true;
+    releaseStick();
+    stickEl.hidden = !stickMode();
+    try { localStorage.setItem(NAME_KEY, cleanName(nameInput.value)); } catch (e) {}
+    state = 'play';
+    titleCard.hidden = true; resultCard.hidden = true; pauseCard.hidden = true;
+    soundPanel.hidden = true; zukanPanel.hidden = true; sharePanel.hidden = true;
+    $('pauseBtn').hidden = false; $('fsBtn').hidden = true;
+    cv.focus({ preventScroll: true });
+  }
+
+  function endGame() {
+    if (state !== 'play') return;
+    state = 'result';
+    $('dashFloat').hidden = true;
+    $('pauseBtn').hidden = true; $('fsBtn').hidden = false;
+    $('rankBtn').hidden = false; $('creditBox').hidden = false;
+    stickEl.hidden = true; releaseStick();
+    const bad = G.reason === 'tai' || G.reason === 'net';
+    Sound.play(bad ? 'bad' : 'sea');
+    const d = G.reason === 'net' ? BAD_NET : bad ? BAD_DISH : dishFor(G.score);
+    const isNew = !save.got.includes(d.id);
+    if (isNew) save.got.push(d.id);
+    const goldSkin = SKINS.find(k => k.id === 'gold');
+    const goldBefore = skinUnlocked(goldSkin);
+    const newBest = G.score > save.best;
+    if (newBest) save.best = G.score;
+    const goldNow = !goldBefore && skinUnlocked(goldSkin);
+    const unlockedNow = !save.hard && G.score >= HARD_UNLOCK;
+    if (unlockedNow) save.hard = true;
+    persist();
+    renderMenu();
+    renderDiff();
+    renderSkins();
+    const unlockMsgs = [];
+    if (unlockedNow) unlockMsgs.push('ハードモードが開放された！ タイトルで選べます');
+    if (goldNow) unlockMsgs.push(`${GOLD_SKIN_SCORE}pt 達成！ 金色のえびが開放された（着せかえで選べます）`);
+    $('unlockNote').hidden = !unlockMsgs.length;
+    $('unlockNote').textContent = unlockMsgs.join('　');
+    const ft = G.foundTreasure, tn = $('treasureNote');
+    tn.hidden = !ft;
+    if (ft) {
+      const complete = ft.isNew && save.treasures.length === TREASURES.length;
+      tn.textContent = `宝物「${TREASURES.find(x => x.id === ft.id).name}」を見つけた！${ft.isNew ? ` 図鑑に追加、かぶりもの「${HATS.find(h => h.from === ft.id).name}」が使えるようになった` : '（登録済み）'}${complete ? '　宝物コンプリート！ 虹色のえびが開放された' : ''}`;
+    }
+    const status = $('rankStatus');
+    status.textContent = RANK.ready ? 'ランキングに送信中…' : '';
+    // シェア用に今回の結果を控える（順位はランキング送信のあとで入る）
+    const share = G.share = { dishId: d.id, score: G.score, hard: G.hard, name: playerName(), rank: 0 };
+    share.ready = submitScore(G.score, d.id, G.hard ? 'hard' : 'normal').then(r => {
+      // 順位を載せるのは「今回のプレイで自己ベストを更新し、そのスコアがトップ10に入った」ときだけ
+      const idx = lastRankRows.findIndex(x => x.id === myId);
+      share.rank = RANK.ready && r.kind === 'best' && idx >= 0 ? idx + 1 : 0;
+      status.textContent = {
+        best: 'ランキングに記録しました。',
+        kept: `ランキングの記録は自己ベストの ${r.prev}pt のままです。`,
+        denied: 'ランキングに記録できませんでした。通信状況を確かめて、もう一度遊んでみてください。',
+        off: '',
+      }[r.kind];
+    });
+    setTimeout(() => {
+      $('ticketLabel').textContent = `${playerName()} さんの一皿${G.hard ? '（HARD）' : ''}`;
+      $('reason').textContent = {
+        time: 'タイムアップ！ 厨房へ直行',
+        caught: 'つかまった！ …でも料理にはなる',
+        tai: '鯛に食べられた！ バッドエンド',
+        net: '網にかかった！ 体が小さかったので釣り餌に…',
+      }[G.reason];
+      setDishName($('dishName'), d);
+      if (isNew) { const b = document.createElement('span'); b.className = 'new-badge'; b.textContent = 'NEW'; $('dishName').appendChild(b); }
+      $('dishBlurb').textContent = d.blurb;
+      $('finalScore').textContent = `${G.score} pt`;
+      $('bestScore').textContent = newBest ? 'ベスト更新！' : `ベスト ${save.best}pt`;
+      const next = DISHES[DISHES.indexOf(d) + 1];
+      $('nextHint').textContent = bad
+        ? `バッドエンド。スコアは 0pt に…　${G.reason === 'net' ? '網の光っている穴をくぐろう。' : '鯛には気をつけて。'}`
+        : next ? `あと ${next.min - G.score}pt で次の料理` : '最高の一皿に到達！';
+      paintDish(d.id);
+      resultCard.hidden = false;
+      $('againBtn').focus({ preventScroll: true });
+    }, 700);
+  }
+
+  $('startBtn').addEventListener('click', startGame);
+
+  // えびの色（スキン）
+  function renderSkins() {
+    const box = $('skinSwatches');
+    box.innerHTML = '';
+    for (const k of SKINS) {
+      const open = skinUnlocked(k);
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'swatch' + (open ? '' : ' locked');
+      b.style.background = k.rainbow
+        ? 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.8) 0 16%, transparent 40%), conic-gradient(#ff6b6b, #ffd35a, #7fd46a, #5aa9f0, #b07cf0, #ff6b6b)'
+        : `radial-gradient(circle at 35% 30%, ${k.light} 0 18%, ${k.body} 40%, ${k.shade} 100%)`;
+      b.disabled = !open;
+      b.setAttribute('aria-label', open ? `えびの色：${k.name}` : `えびの色：${k.name}（${skinHint(k)}）`);
+      b.title = open ? k.name : `${k.name}：${skinHint(k)}`;
+      b.setAttribute('aria-pressed', String(k.id === skin));
+      b.addEventListener('click', () => {
+        skin = k.id;
+        try { localStorage.setItem(SKIN_KEY, skin); } catch (e) {}
+        renderSkins();
+      });
+      box.appendChild(b);
+    }
+    $('skinName').textContent = SKINS.find(k => k.id === skin).name;
+    const locked = SKINS.filter(k => !skinUnlocked(k));
+    $('skinHint').textContent = locked.length ? locked.map(k => `${k.name}：${skinHint(k)}`).join('　') : '特別な色もすべて開放済み！';
+    renderHats(); // 試着プレビューを新しい色で描き直す
+  }
+
+  // タイトルの着せかえボタン: いまの色とかぶりもののえびを丸い枠に描く
+  function drawWardrobeIcon() {
+    const cvs = $('wdIcon'), S = 62;
+    cvs.width = S * dpr; cvs.height = S * dpr;
+    const c = cvs.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.fillStyle = 'rgba(0,0,0,0.3)'; c.beginPath(); c.ellipse(31, 58, 20, 3, 0, 0, Math.PI * 2); c.fill();
+    drawIconArt(c);
+    $('wdSaveMsg').textContent = 'いまの色とかぶりもののアイコンを PNG（512×512）で保存';
+  }
+  // 丸枠＋えび（アイコン本体）。座標は 62px 基準、円の中心 (31,30)・半径 24
+  function drawIconArt(c, sk = skin, ht = hat) {
+    c.fillStyle = '#e9e1f5'; c.beginPath(); c.arc(31, 30, 24, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#b9a8d6'; c.lineWidth = 1.5; c.stroke();
+    c.save();
+    c.beginPath(); c.arc(31, 30, 22.5, 0, Math.PI * 2); c.clip();
+    drawShrimp(c, 16, 37, 1.0, 1, 0.4, { skin: sk, hat: ht }); // 頭とかぶりものが枠の中心に来るよう寄せて描く
+    c.restore();
+  }
+  // 保存用: 同じ絵を 512×512 の透明背景 PNG に描く
+  function iconPngBlob() {
+    const S = 512, cvs = document.createElement('canvas');
+    cvs.width = S; cvs.height = S;
+    const c = cvs.getContext('2d');
+    const k = (S / 2 - 6) / 24.75; // 枠線まで収まる倍率
+    c.setTransform(k, 0, 0, k, S / 2 - 31 * k, S / 2 - 30 * k);
+    drawIconArt(c);
+    return new Promise((res, rej) => cvs.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/png'));
+  }
+
+  // かぶりもの
+  function renderHats() {
+    const box = $('hatList');
+    box.innerHTML = '';
+    for (const h of HATS) {
+      const open = hatUnlocked(h);
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'hat-tile';
+      b.disabled = !open;
+      b.title = open ? h.name : '？？？（宝物で開放）';
+      b.setAttribute('aria-label', open ? `かぶりもの：${h.name}` : 'まだ手に入れていないかぶりもの');
+      b.setAttribute('aria-pressed', String(h.id === hat));
+      if (h.id === 'none') b.textContent = 'なし';
+      else {
+        const cvs = document.createElement('canvas');
+        cvs.width = 48 * dpr; cvs.height = 38 * dpr;
+        const c = cvs.getContext('2d');
+        c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawShrimp(c, 6, 25, 1.05, 1, 0, { skin, hat: h.id });
+        if (!open) {
+          c.setTransform(1, 0, 0, 1, 0, 0);
+          c.globalCompositeOperation = 'source-in';
+          c.fillStyle = 'rgba(140,175,180,0.35)'; c.fillRect(0, 0, cvs.width, cvs.height);
+        }
+        b.appendChild(cvs);
+      }
+      b.addEventListener('click', () => {
+        hat = h.id;
+        try { localStorage.setItem(HAT_KEY, hat); } catch (e) {}
+        renderHats();
+      });
+      box.appendChild(b);
+    }
+    $('hatName').textContent = HATS.find(h => h.id === hat).name;
+    drawWardrobeIcon();
+    $('wdNow').textContent = `色：${SKINS.find(k => k.id === skin).name} ／ かぶりもの：${HATS.find(h => h.id === hat).name}`;
+    const n = HATS.filter(h => h.id !== 'none' && hatUnlocked(h)).length;
+    $('hatHint').textContent = n < HATS.length - 1
+      ? `海の宝物を見つけると、かぶりものが増える（${n}/${HATS.length - 1}）`
+      : `すべてのかぶりものがそろった！（${n}/${HATS.length - 1}）`;
+  }
+  renderSkins();
+
+  // 着せかえパネル（色／かぶりものタブ＋動くプレビュー）
+  const wardrobePanel = $('wardrobePanel'), wdCv = $('wdPreview'), wdCtx = wdCv.getContext('2d');
+  const WDW = 320, WDH = 140;
+  wdCv.width = WDW * dpr; wdCv.height = WDH * dpr;
+  function drawWardrobePreview(now) {
+    if (wardrobePanel.hidden) return;
+    const t = now / 1000;
+    wdCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const g = wdCtx.createLinearGradient(0, 0, 0, WDH);
+    g.addColorStop(0, '#1d8095'); g.addColorStop(1, '#0c3644');
+    wdCtx.fillStyle = g; wdCtx.fillRect(0, 0, WDW, WDH);
+    wdCtx.strokeStyle = 'rgba(220,250,255,0.3)'; wdCtx.lineWidth = 1;
+    for (let i = 0; i < 6; i++) {
+      const y = WDH - ((t * 18 + i * 29) % (WDH + 10)), x = 30 + i * 52 + Math.sin(t + i) * 4;
+      wdCtx.beginPath(); wdCtx.arc(x, y, 2 + (i % 3), 0, Math.PI * 2); wdCtx.stroke();
+    }
+    drawShrimp(wdCtx, 139, 80 + Math.sin(t * 1.6) * 4, 2.1, 1, t, { skin, hat });
+    requestAnimationFrame(drawWardrobePreview);
+  }
+  const tabs = [$('tabColor'), $('tabHat')];
+  function selectTab(tab) {
+    for (const tb of tabs) {
+      const on = tb === tab;
+      tb.setAttribute('aria-selected', String(on));
+      tb.tabIndex = on ? 0 : -1;
+      $(tb.getAttribute('aria-controls')).hidden = !on;
+    }
+  }
+  tabs.forEach((tb, i) => {
+    tb.addEventListener('click', () => selectTab(tb));
+    tb.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      selectTab(next); next.focus();
+    });
+  });
+  $('wardrobeBtn').addEventListener('click', () => {
+    renderSkins();
+    wardrobePanel.hidden = false; wardrobePanel.scrollTop = 0;
+    requestAnimationFrame(drawWardrobePreview);
+    tabs.find(tb => tb.getAttribute('aria-selected') === 'true').focus({ preventScroll: true });
+  });
+  // アイコンを画像で保存（通常のダウンロード）
+  $('wdSaveRow').hidden = false;
+  $('wdSave').addEventListener('click', async () => {
+    const msg = $('wdSaveMsg'), btn = $('wdSave');
+    btn.disabled = true;
+    try {
+      const blob = await iconPngBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `ebi-icon-${skin}-${hat}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      msg.textContent = '保存しました（ダウンロードを確認してください）';
+    } catch (e) {
+      msg.textContent = '保存できませんでした。もう一度お試しください';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  const closeWardrobe = () => { wardrobePanel.hidden = true; $('wardrobeBtn').focus({ preventScroll: true }); };
+  $('wdClose').addEventListener('click', closeWardrobe);
+  wardrobePanel.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeWardrobe(); } });
+
+  // 海の宝物図鑑
+  const zukanPanel = $('zukanPanel'), zkGrid = $('zkGrid'), zkDetail = $('zkDetail');
+  function renderZukanBtn() {
+    const n = `${save.treasures.length}/${TREASURES.length}`;
+    $('zukanCount').textContent = n;
+    $('zukanBtn').setAttribute('aria-label', `海の宝物図鑑（${n}）`);
+  }
+  function showZukanDetail(tr) {
+    zkGrid.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === tr.id)));
+    zkDetail.textContent = '';
+    if (save.treasures.includes(tr.id)) {
+      const b = document.createElement('b'); b.textContent = tr.name;
+      zkDetail.append(b, document.createElement('br'), tr.desc);
+    } else {
+      zkDetail.textContent = 'まだ見つかっていない宝物。海の底から、たまに流れてくるかも？';
+    }
+  }
+  function renderZukan() {
+    zkGrid.innerHTML = '';
+    $('zkCount').textContent = `${save.treasures.length} / ${TREASURES.length}`;
+    zkDetail.textContent = save.treasures.length ? '見つけた宝物を選ぶと、説明が読めます。' : 'まだ宝物はひとつもない。海の底から、たまに流れてくるかも？';
+    for (const tr of TREASURES) {
+      const got = save.treasures.includes(tr.id);
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.dataset.id = tr.id; btn.setAttribute('aria-pressed', 'false');
+      if (!got) btn.className = 'locked';
+      const cvs = document.createElement('canvas');
+      cvs.width = 56 * dpr; cvs.height = 56 * dpr;
+      const c = cvs.getContext('2d');
+      c.setTransform(dpr * 1.15, 0, 0, dpr * 1.15, 28 * dpr, 28 * dpr);
+      drawTreasureIcon(c, tr.id, 0);
+      if (!got) { // 未発見はシルエット
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.globalCompositeOperation = 'source-in';
+        c.fillStyle = 'rgba(140,175,180,0.35)'; c.fillRect(0, 0, cvs.width, cvs.height);
+      }
+      const label = document.createElement('span');
+      label.textContent = got ? tr.name : '？？？';
+      btn.append(cvs, label);
+      btn.addEventListener('click', () => showZukanDetail(tr));
+      li.appendChild(btn); zkGrid.appendChild(li);
+    }
+  }
+  renderZukanBtn();
+  $('zukanBtn').addEventListener('click', () => { renderZukan(); zukanPanel.hidden = false; zukanPanel.scrollTop = 0; $('zkClose').focus({ preventScroll: true }); });
+  const rankPanel = $('rankPanel');
+  $('rankBtn').addEventListener('click', () => { rankPanel.hidden = false; rankPanel.scrollTop = 0; $('rkClose').focus({ preventScroll: true }); });
+  const closeRank = () => { rankPanel.hidden = true; $('rankBtn').focus({ preventScroll: true }); };
+  $('rkClose').addEventListener('click', closeRank);
+  rankPanel.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeRank(); } });
+  const menuPanel = $('menuPanel');
+  $('menuBtn').addEventListener('click', () => {
+    renderMenuPanel(); menuPanel.hidden = false;
+    $('mnClose').focus({ preventScroll: true });
+    menuPanel.scrollTop = 0; requestAnimationFrame(() => { menuPanel.scrollTop = 0; });
+  });
+  const closeMenuPanel = () => { menuPanel.hidden = true; $('menuBtn').focus({ preventScroll: true }); };
+  $('mnClose').addEventListener('click', closeMenuPanel);
+  menuPanel.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeMenuPanel(); } });
+  const closeZukan = () => { zukanPanel.hidden = true; $(state === 'paused' ? 'pzZukan' : 'zukanBtn').focus({ preventScroll: true }); };
+  $('zkClose').addEventListener('click', closeZukan);
+  zukanPanel.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeZukan(); } });
+
+
+  // sound settings panel
+  const soundPanel = $('soundPanel'), bgmToggle = $('bgmToggle'), volRange = $('volRange');
+  function renderSound() {
+    const s = Sound.settings;
+    bgmToggle.setAttribute('aria-checked', String(s.on));
+    bgmToggle.querySelector('span').textContent = s.on ? 'オン' : 'オフ';
+    volRange.value = Math.round(s.vol * 100);
+    $('volOut').textContent = Math.round(s.vol * 100);
+    volRange.closest('.sp-row').classList.toggle('off', !s.on);
+    $('soundBtn').classList.toggle('muted', !s.on);
+    $('pzSound').classList.toggle('muted', !s.on);
+    $('soundBtn').setAttribute('aria-label', `サウンド設定（BGM ${s.on ? 'オン' : 'オフ'}）`);
+  }
+  renderSound();
+  $('soundBtn').addEventListener('click', () => { Sound.unlock(); soundPanel.hidden = false; bgmToggle.focus(); });
+  const closeSound = () => { soundPanel.hidden = true; $(state === 'paused' ? 'pzSound' : 'soundBtn').focus({ preventScroll: true }); };
+  $('spClose').addEventListener('click', closeSound);
+  soundPanel.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeSound(); } });
+
+  // ---------- シェア ----------
+  // リンク先のページに合わせて X がカード画像を出す（タイトル＝サムネイル、結果＝料理ごとの画像）
+  const SITE = new URL('./', location.href).href;
+  const sharePanel = $('sharePanel');
+  let shareOpener = null;
+  function titleShareText() {
+    return [
+      'えびを操って60秒、大きく育てるほど豪華な料理になるブラウザゲーム「えびダイブ食堂」。一緒に遊びませんか？',
+      '#えびダイブ食堂',
+      `${SITE}play`, // サムネイル付きの招待用ページ（X が古いカードを覚えていない新しいアドレス）
+    ].join('\n');
+  }
+  function resultShareText(s) {
+    const d = ALL_DISHES.find(x => x.id === s.dishId) || DISHES[0];
+    let l1 = `今日のまかないは「${d.name}」！`, l2 = 'えびを育てて料理にするゲーム、君も一緒に潜ってみない？';
+    if (d.id === 'nitsuke') { l1 = `今日のまかないは「${d.name}」…えびは鯛に食べられました。`; l2 = 'リベンジ待ってます。君も一緒に潜ってみない？'; }
+    if (d.id === 'bait') { l1 = `今日のまかないは「${d.name}」…えびは網にかかって釣り餌になりました。`; l2 = 'リベンジ待ってます。君も一緒に潜ってみない？'; }
+    const lines = [l1, l2, '#えびダイブ食堂', `${SITE}d/${d.id}.html`, `${s.name}さんは${s.score}pt獲得！${s.hard ? '（HARD）' : ''}`];
+    if (s.rank) lines.push(`現在第${s.rank}位！`);
+    return lines.join('\n');
+  }
+  function openShare(text, opener) {
+    shareOpener = opener;
+    $('shText').value = text;
+    $('shX').href = 'https://x.com/intent/post?text=' + encodeURIComponent(text);
+    $('shMsg').textContent = '';
+    sharePanel.hidden = false;
+    $('shX').focus({ preventScroll: true });
+  }
+  const closeShare = () => { sharePanel.hidden = true; if (shareOpener) shareOpener.focus({ preventScroll: true }); };
+  $('shareGameBtn').addEventListener('click', () => openShare(titleShareText(), $('shareGameBtn')));
+  // 結果ボタンにはタイトルのシェアアイコンを複製して使う
+  $('shareResultBtn').prepend($('shareGameBtn').querySelector('svg').cloneNode(true));
+  $('shareResultBtn').addEventListener('click', async () => {
+    const s = G.share;
+    if (!s) return;
+    // ランキングの送信がまだなら、少しだけ待って順位を文面に入れる
+    await Promise.race([s.ready, new Promise(r => setTimeout(r, 3000))]).catch(() => {});
+    openShare(resultShareText(s), $('shareResultBtn'));
+  });
+  $('shCopy').addEventListener('click', async () => {
+    const text = $('shText').value;
+    try {
+      await navigator.clipboard.writeText(text);
+      $('shMsg').textContent = 'コピーしました。X などに貼り付けて使えます。';
+    } catch (e) {
+      const ta = $('shText');
+      ta.focus(); ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (err) {}
+      $('shMsg').textContent = ok ? 'コピーしました。X などに貼り付けて使えます。' : '自動でコピーできませんでした。文面を選んでコピーしてください。';
+    }
+  });
+  $('shX').addEventListener('click', () => { $('shMsg').textContent = 'X の投稿画面を開きました。'; });
+  $('shClose').addEventListener('click', closeShare);
+  sharePanel.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeShare(); } });
+  bgmToggle.addEventListener('click', () => { Sound.setOn(!Sound.settings.on); renderSound(); });
+  volRange.addEventListener('input', () => { Sound.setVol(volRange.value / 100); renderSound(); });
+  nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); startGame(); } });
+  $('againBtn').addEventListener('click', startGame);
+  function backToTitle() {
+    state = 'title';
+    resultCard.hidden = true; pauseCard.hidden = true; titleCard.hidden = false;
+    soundPanel.hidden = true; zukanPanel.hidden = true; sharePanel.hidden = true;
+    $('pauseBtn').hidden = true; $('fsBtn').hidden = false; $('dashFloat').hidden = true;
+    stickEl.hidden = true; releaseStick();
+    $('rankBtn').hidden = false; $('creditBox').hidden = false;
+    Sound.play('sea');
+    $('startBtn').focus({ preventScroll: true });
+  }
+  $('titleBtn').addEventListener('click', backToTitle);
+
+  // ---------- ポーズ ----------
+  const pauseCard = $('pauseCard');
+  // ポーズ画面のサウンド・図鑑ボタンは、タイトルのアイコンをそのまま複製して使う
+  $('pzSound').prepend($('soundBtn').querySelector('svg').cloneNode(true));
+  $('pzZukan').prepend($('zukanBtn').querySelector('svg').cloneNode(true));
+  renderSound();
+  function pauseGame() {
+    if (state !== 'play') return;
+    state = 'paused';
+    for (const k in keys) keys[k] = false;
+    ptr.active = false; ptr.hold = false; releaseStick();
+    $('pauseBtn').hidden = true; $('fsBtn').hidden = false; $('dashFloat').hidden = true; stickEl.hidden = true;
+    pauseCard.hidden = false;
+    $('pzResume').focus({ preventScroll: true });
+  }
+  function resumeGame() {
+    if (state !== 'paused') return;
+    soundPanel.hidden = true; zukanPanel.hidden = true; sharePanel.hidden = true;
+    pauseCard.hidden = true;
+    for (const k in keys) keys[k] = false;
+    $('pauseBtn').hidden = false; $('fsBtn').hidden = true; $('dashFloat').hidden = false; stickEl.hidden = !stickMode();
+    state = 'play';
+    cv.focus({ preventScroll: true });
+  }
+  $('pauseBtn').addEventListener('click', pauseGame);
+  $('pzResume').addEventListener('click', resumeGame);
+  $('pzRetry').addEventListener('click', startGame);
+  $('pzQuit').addEventListener('click', backToTitle);
+  $('pzSound').addEventListener('click', () => { Sound.unlock(); soundPanel.hidden = false; bgmToggle.focus(); });
+  $('pzZukan').addEventListener('click', () => {
+    renderZukan(); zukanPanel.hidden = false;
+    $('zkClose').focus({ preventScroll: true }); zukanPanel.scrollTop = 0;
+  });
+  // ---------- 全画面 ----------
+  // iPad などは本物の全画面 API、iPhone の Safari のように使えない環境では
+  // ゲーム画面をページいっぱいに広げる表示に切り替える
+  let isFull = false, realFull = false;
+  const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  function setFullUI(on) {
+    isFull = on;
+    stageEl.classList.toggle('is-full', on);
+    document.body.classList.toggle('no-scroll', on);
+    $('fsBtn').setAttribute('aria-label', on ? '全画面を終了' : 'ゲーム画面を全画面にする');
+    $('fsBtn').title = on ? '全画面を終了' : '全画面';
+  }
+  async function enterFull() {
+    setFullUI(true);
+    const req = stageEl.requestFullscreen || stageEl.webkitRequestFullscreen;
+    if (req) {
+      try { await req.call(stageEl); } catch (e) {}
+      realFull = fsElement() === stageEl;
+    }
+  }
+  function exitFull() {
+    if (realFull && fsElement()) {
+      const ex = document.exitFullscreen || document.webkitExitFullscreen;
+      try { const r = ex && ex.call(document); if (r && r.catch) r.catch(() => {}); } catch (e) {}
+    }
+    realFull = false;
+    setFullUI(false);
+  }
+  const onFsChange = () => { if (realFull && !fsElement()) { realFull = false; setFullUI(false); } };
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+  $('fsBtn').addEventListener('click', () => { isFull ? exitFull() : enterFull(); });
+
+  // ---------- ホーム画面アプリ ----------
+  // ホーム画面から起動したときは、最初からゲーム画面いっぱいの表示にする
+  const isStandalone = (window.matchMedia && matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) || navigator.standalone === true;
+  if (isStandalone) setFullUI(true);
+  // iPhone / iPad のブラウザで開いたときだけ、「ホーム画面に追加」の案内を出す
+  (() => {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIOS || isStandalone) return;
+    try { if (localStorage.getItem('ebi-dive-a2hs-closed') === '1') return; } catch (e) {}
+    const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Line\/|Instagram|FBAN|FBAV/.test(ua);
+    if (isSafari) {
+      $('a2hsLead').textContent = 'ホーム画面に追加すると、ブラウザのバーなしの全画面で遊べます。';
+      $('a2hsSteps').textContent = '画面下（iPad は右上）の共有ボタン（四角から上向き矢印）→「ホーム画面に追加」→「追加」。ホーム画面にできた えびのアイコンから起動してください。';
+    } else {
+      $('a2hsLead').textContent = 'このアプリの中だと画面が狭くなります。Safari で開き直すと、全画面で遊べます。';
+      $('a2hsSteps').textContent = '右上や下のメニュー（「…」や共有ボタン）から「Safari で開く」を選びます。Safari で開いたら、共有ボタン →「ホーム画面に追加」で、ブラウザのバーなしで遊べるようになります。';
+    }
+    $('a2hs').hidden = false;
+    $('a2hsHow').addEventListener('click', () => {
+      const open = $('a2hsSteps').hidden;
+      $('a2hsSteps').hidden = !open;
+      $('a2hsHow').setAttribute('aria-expanded', String(open));
+      $('a2hsHow').textContent = open ? 'やり方を閉じる' : 'やり方';
+    });
+    $('a2hsClose').addEventListener('click', () => {
+      $('a2hs').hidden = true;
+      try { localStorage.setItem('ebi-dive-a2hs-closed', '1'); } catch (e) {}
+    });
+  })();
+
+  // プレイ中に別のタブやアプリへ切り替えたら自動でポーズ
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
+  // difficulty selector
+  const diffBtns = document.querySelectorAll('[data-diff]');
+  function renderDiff() {
+    const hb = $('hardBtn');
+    hb.disabled = !save.hard;
+    hb.textContent = save.hard ? 'ハード' : 'ハード（未開放）';
+    diffBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.diff === diff)));
+    $('diffHint').textContent = !save.hard
+      ? `${HARD_UNLOCK}pt を達成するとハードモードが開放される`
+      : diff === 'hard' ? '残機1・スコア2倍（無敵中は4倍）・マグロ多め・漁船出現・えび1.2倍' : '残機3・いつものルール';
+  }
+  diffBtns.forEach(b => b.addEventListener('click', () => {
+    if (b.disabled) return;
+    diff = b.dataset.diff;
+    try { localStorage.setItem(DIFF_KEY, diff); } catch (e) {}
+    renderDiff();
+  }));
+  renderDiff();
+
+  const KMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down' };
+  addEventListener('keydown', e => {
+    if (e.key in KMAP) { keys[KMAP[e.key]] = true; if (state === 'play') e.preventDefault(); }
+    if (e.key === ' ' && state === 'play') e.preventDefault(); // ページのスクロールだけ止める
+    if (e.key === 'Escape') {
+      if (state === 'play') { e.preventDefault(); pauseGame(); }
+      else if (state === 'paused' && soundPanel.hidden && zukanPanel.hidden) { e.preventDefault(); resumeGame(); }
+      else if (isFull && !realFull) { e.preventDefault(); exitFull(); } // ページいっぱい表示は Esc でも戻せる
+    }
+    // Q キーでもポーズ／再開（全画面中に Esc がブラウザに取られても使える）
+    if ((e.key === 'q' || e.key === 'Q') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (state === 'play') { e.preventDefault(); pauseGame(); }
+      else if (state === 'paused' && soundPanel.hidden && zukanPanel.hidden) { e.preventDefault(); resumeGame(); }
+    }
+    // F キーで全画面の切り替え（名前入力中は除く）
+    if ((e.key === 'f' || e.key === 'F') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && document.activeElement !== nameInput) {
+      e.preventDefault();
+      isFull ? exitFull() : enterFull();
+    }
+    if (e.key === 'Enter' && state === 'title' && soundPanel.hidden && zukanPanel.hidden && wardrobePanel.hidden && menuPanel.hidden && rankPanel.hidden && sharePanel.hidden && document.activeElement === document.body) startGame();
+  });
+  addEventListener('keyup', e => { if (e.key in KMAP) keys[KMAP[e.key]] = false; });
+  addEventListener('blur', () => { for (const k in keys) keys[k] = false; ptr.active = false; });
+
+  // タッチ: タップした場所へ泳ぐ／押したまま動かすと追いかける／ダブルタップか2本目の指ではねる
+  const gamePos = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; };
+  let lastTap = { t: 0, x: 0, y: 0 };
+  cv.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (e.pointerType === 'mouse' && e.button === 2) { dash(); return; } // 右クリックではねる
+    if (stickMode()) return;
+    if (ptr.hold && e.pointerId !== ptr.id) { dash(); return; }
+    const q = gamePos(e), now = performance.now();
+    if (e.pointerType !== 'mouse' && now - lastTap.t < 320 && Math.hypot(q.x - lastTap.x, q.y - lastTap.y) < 80) dash();
+    lastTap = { t: now, x: q.x, y: q.y };
+    Object.assign(ptr, { active: true, hold: true, id: e.pointerId, x: q.x, y: q.y });
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  cv.addEventListener('pointermove', e => {
+    // 左ドラッグ中に右ボタンを押すと pointerdown ではなく pointermove が来る
+    if (e.pointerType === 'mouse' && e.button === 2 && (e.buttons & 2)) dash();
+    if (ptr.hold && e.pointerId === ptr.id) Object.assign(ptr, gamePos(e));
+  });
+  const up = e => {
+    if (e.pointerId !== ptr.id) return;
+    if (e.pointerType === 'mouse' && e.button === 2) return; // 右ボタンを離しただけなら移動は続ける
+    ptr.hold = false;
+    if (e.pointerType === 'mouse' || e.type === 'pointercancel') ptr.active = false;
+  };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  const dashFloat = $('dashFloat');
+  dashFloat.addEventListener('pointerdown', e => { e.preventDefault(); dash(); });
+  cv.tabIndex = 0;
+
+  renderMenu();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

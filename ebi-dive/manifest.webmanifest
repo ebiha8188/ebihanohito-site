@@ -1,0 +1,17 @@
+{
+  "name": "えびダイブ食堂",
+  "short_name": "えびダイブ",
+  "description": "えびを操って60秒間プランクトンを食べよう。大きく育ったえびほど、豪華な料理になって出てくるブラウザゲーム。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#0b222c",
+  "theme_color": "#0b222c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
