@@ -91,7 +91,7 @@ export async function start() {
   scene.background = new THREE.Color('#061820');
   scene.fog = new THREE.Fog('#061820', 30, 70);
 
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.2, 120);
 
   const world = new World(scene);
   const loader = new THREE.TextureLoader();
@@ -471,25 +471,25 @@ class World {
     const s = this.scene;
     // 模型の台座（木）
     const wood = this.mat('#5a3b28', { roughness: 0.7 });
-    this.box(18.6, 0.7, 19.6, wood, 0, -0.36, -0.6);
+    this.box(18.6, 0.7, 19.6, wood, 0, -0.65, -0.6);
     const trim = this.mat('#c99a5b', { roughness: 0.5, metalness: 0.2 });
-    this.box(18.8, 0.08, 19.8, trim, 0, -0.07, -0.6); // 上面は床より下（同じ高さだと床がちらつく）
+    // 床のすぐ下に別の面があると、スマホなど奥行きの精度が低い端末で床がちらつく。
+    // 台座は床の30cm下まで下げ、床は厚みのある板にする
+    this.box(18.8, 0.08, 19.8, trim, 0, -0.36, -0.6);
     // 台座の名札
     const plate = textPlane(['えびは LIVE HOUSE'], { w: 1024, h: 160, bg: '#c99a5b', color: '#3a2414', font: `64px ${FONT_DISPLAY}`, pad: 0 }, 3.6, 0.56);
-    plate.position.set(4.2, -0.36, 8.71);
+    plate.position.set(4.2, -0.65, 9.21);
     s.add(plate);
 
     // ホールの床（コンクリート）と、ロビーの市松
-    const hallFloor = new THREE.Mesh(new THREE.PlaneGeometry(16, 12.2), this.mat('#2b2b33', { roughness: 0.95 }));
-    hallFloor.rotation.x = -Math.PI / 2; hallFloor.position.set(0, 0.02, -2.9);
-    s.add(hallFloor);
+    this.box(16, 0.32, 12.2, this.mat('#2b2b33'), 0, -0.14, -2.9);
     const checker = canvasTex(512, 512, (g, w, h) => {
       const n = 8;
       for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { g.fillStyle = (i + j) % 2 ? '#e9e0cf' : '#2a2422'; g.fillRect(i * w / n, j * h / n, w / n, h / n); }
     });
     checker.wrapS = checker.wrapT = THREE.RepeatWrapping; checker.repeat.set(4, 1.5);
-    const lobby = new THREE.Mesh(new THREE.PlaneGeometry(16, 5.55), this.mat('#ffffff', { map: checker, roughness: 0.6 }));
-    lobby.rotation.x = -Math.PI / 2; lobby.position.set(0, 0.02, 5.975);
+    const lobby = new THREE.Mesh(new THREE.BoxGeometry(16, 0.32, 5.55), this.mat('#ffffff', { map: checker }));
+    lobby.position.set(0, -0.14, 5.975);
     s.add(lobby);
 
     // 壁：奥と左だけ高く、手前と右は低い縁（ドールハウスの切り口）
@@ -497,8 +497,8 @@ class World {
     this.box(16.2, 3.8, 0.25, wallM, 0, 1.9, -9.0);
     this.box(0.25, 3.8, 17.8, wallM, -8.0, 1.9, -0.25);
     const rim = this.mat('#262a3a');
-    this.box(0.25, 0.35, 17.8, rim, 8.0, 0.175, -0.25);
-    this.box(16.2, 0.35, 0.25, rim, 0, 0.175, 8.6);
+    this.box(0.25, 0.67, 17.8, rim, 8.0, 0.015, -0.25);
+    this.box(16.2, 0.67, 0.25, rim, 0, 0.015, 8.6);
     // 壁の切り口（白い断面）
     const cut = this.mat('#efe9dd');
     this.box(16.2, 0.04, 0.27, cut, 0, 3.8, -9.0);
@@ -590,8 +590,8 @@ class World {
     this.plant(-7.3, 8.0);
     this.plant(7.4, 4.2);
     // 床のマット
-    const mat = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.6), this.mat('#6b1f2a', { roughness: 1 }));
-    mat.rotation.x = -Math.PI / 2; mat.position.set(3.2, 0.03, 6.8);
+    const mat = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.6), this.mat('#6b1f2a', { polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+    mat.rotation.x = -Math.PI / 2; mat.position.set(3.2, 0.05, 6.8);
     this.scene.add(mat);
 
     this.hotspot('reception', [4.2, 3.0, 2.4, 3.2, 1.5, 5.0]);
@@ -753,8 +753,9 @@ class World {
     const sH = 0.7;
     const front = this.mat('#111116', { emissive: '#5f8bff', emissiveIntensity: 0, unique: true });
     this.addHover('stage', front, 0, 0.22);
-    this.box(11, sH, 3.4, front, 0, sH / 2, -7.2, g);
-    this.box(11.1, 0.05, 3.5, this.mat('#3a2a20', { roughness: 0.5 }), 0, sH + 0.02, -7.2, g);
+    const deck = this.mat('#3a2a20');
+    const stageBox = new THREE.Mesh(new THREE.BoxGeometry(11, sH, 3.4), [front, front, deck, front, front, front]);
+    stageBox.position.set(0, sH / 2, -7.2); g.add(stageBox);
     // 柵
     const rail = this.mat('#8d96a3', { metalness: 0.7, roughness: 0.35 });
     this.box(8, 0.06, 0.06, rail, 0, 1.05, -4.9, g);
@@ -894,14 +895,14 @@ class World {
       col.set(beamColors[i % beamColors.length]).multiplyScalar(0.55);
       for (let k = 0; k < 8; k++) {
         const a0 = k / 8 * Math.PI * 2, a1 = (k + 1) / 8 * Math.PI * 2;
-        dotPos.push(cx, 0.04, cz, cx + Math.cos(a1) * rad, 0.04, cz + Math.sin(a1) * rad, cx + Math.cos(a0) * rad, 0.04, cz + Math.sin(a0) * rad);
+        dotPos.push(cx, 0.07, cz, cx + Math.cos(a1) * rad, 0.07, cz + Math.sin(a1) * rad, cx + Math.cos(a0) * rad, 0.07, cz + Math.sin(a0) * rad);
         for (let v = 0; v < 3; v++) dotCol.push(col.r, col.g, col.b);
       }
     }
     const dotGeo = new THREE.BufferGeometry();
     dotGeo.setAttribute('position', new THREE.Float32BufferAttribute(dotPos, 3));
     dotGeo.setAttribute('color', new THREE.Float32BufferAttribute(dotCol, 3));
-    const dots = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const dots = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
     dots.position.set(0, 0, -2.2); dots.userData.keep = true;
     this.scene.add(dots);
     this.anim.push((t, dt) => { ball.rotation.y += dt * 0.6; dots.rotation.y += dt * 0.25; });
