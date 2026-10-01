@@ -4,131 +4,299 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>えびは</title>
-<meta name="description" content="えびは の作品置き場。ブラウザで遊べるゲーム「えびダイブ食堂」など。">
+<meta name="description" content="えびは の作品置き場。3D模型のライブハウスを歩いて、ブラウザで遊べるゲーム「えびダイブ食堂」などへ。">
 <meta property="og:type" content="profile">
 <meta property="og:site_name" content="えびは">
 <meta property="og:title" content="えびは">
-<meta property="og:description" content="えびは の作品置き場。ブラウザで遊べるゲーム「えびダイブ食堂」など。">
+<meta property="og:description" content="えびは の作品置き場。3D模型のライブハウスを歩いて、ブラウザで遊べるゲーム「えびダイブ食堂」などへ。">
 <meta property="og:url" content="https://ebihanohito.com/">
 <meta property="og:image" content="https://ebihanohito.com/avatar.png">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:site" content="@Liebudo_ebiha">
-<meta name="theme-color" content="#0b222c">
+<meta name="theme-color" content="#061820">
 <link rel="icon" href="avatar.png">
 <link rel="apple-touch-icon" href="ebi-dive/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<link rel="modulepreload" href="vendor/three.module.min.js">
 <style>
-  /* 深海色の1ページ。上にプロフィール、下に作品カードの一覧 */
+  /* 3Dが使えるときは模型のライブハウス、使えないときは1枚のふつうのページ */
   :root {
     color-scheme: dark;
-    --ground: #0b222c;
+    --ground: #061820;
     --sea: #0f3a48;
     --panel: #10313c;
+    --glass: rgba(9, 30, 39, 0.86);
     --ink: #e4f2ef;
     --muted: #88adac;
     --line: #21505c;
     --shrimp: #ff7a57;
     --plankton: #c6ef6e;
+    --neon: #ff8fb8;
     --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
     --body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: border-box; }
   html, body { background: var(--ground); }
   body {
     margin: 0; color: var(--ink); font-family: var(--body); font-weight: 500; font-size: 15px; line-height: 1.75;
-    background:
-      radial-gradient(1200px 500px at 50% -120px, rgba(31,132,153,0.55), transparent 70%),
-      var(--ground);
+    background: radial-gradient(1200px 500px at 50% -120px, rgba(31,132,153,0.55), transparent 70%), var(--ground);
   }
-  .wrap { max-width: 880px; margin: 0 auto; padding-inline: 16px; padding-block: 56px 48px; display: grid; gap: 48px; }
+  a { color: inherit; }
+  [hidden] { display: none !important; }
+  body:not(.is3d) .only3d { display: none; }
 
-  .profile { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: center; }
-  .avatar { width: 112px; height: 112px; border-radius: 50%; display: block; box-shadow: 0 0 0 3px var(--line), 0 12px 30px rgba(0,0,0,0.35); }
-  .who { display: grid; gap: 6px; min-width: 0; }
-  .eyebrow { margin: 0; color: var(--plankton); font-size: 13px; letter-spacing: 0.14em; }
-  h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(36px, 7vw, 56px); line-height: 1.1; letter-spacing: 0.02em; }
-  .bio { margin: 0; color: var(--ink); max-width: 36em; }
-  .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
-  .link-btn { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px 7px 8px; border-radius: 999px; background: #000; color: #fff; text-decoration: none; font-size: 14px; font-weight: 700; border: 1px solid rgba(255,255,255,0.18); }
+  /* ---------- 共通の部品 ---------- */
+  .eyebrow { margin: 0; color: var(--plankton); font-size: 12px; letter-spacing: 0.16em; font-weight: 700; }
+  h1, h2 { margin: 0; font-family: var(--display); font-weight: 400; letter-spacing: 0.04em; line-height: 1.2; }
+  .profile-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center; }
+  .avatar { width: 84px; height: 84px; border-radius: 50%; display: block; box-shadow: 0 0 0 3px var(--line), 0 10px 24px rgba(0,0,0,0.35); }
+  .name { font-size: 40px; }
+  .bio { margin: 0; }
+  .links { display: flex; flex-wrap: wrap; gap: 10px; }
+  .link-btn { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px 6px 7px; border-radius: 999px; background: #000; color: #fff; text-decoration: none; font-size: 14px; font-weight: 700; border: 1px solid rgba(255,255,255,0.18); }
   .link-btn .x { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #000; }
   .link-btn .x svg { width: 13px; height: 13px; }
   .link-btn:hover { background: #1a1a1a; }
-  .link-btn:focus-visible, .play:focus-visible { outline: 3px solid var(--plankton); outline-offset: 3px; }
+  .guide { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .guide a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--line); text-decoration: none; }
+  .guide a:hover { background: rgba(255,255,255,0.09); }
+  .guide .no { font-family: var(--display); color: var(--shrimp); font-size: 15px; }
+  .guide b { display: block; font-size: 15px; }
+  .guide small { color: var(--muted); font-size: 12.5px; }
+  .guide .arrow { color: var(--muted); }
+  .section-title { font-size: 26px; }
+  .lead { margin: 0; color: var(--muted); font-size: 14px; }
 
-  .works { display: grid; gap: 18px; }
-  .works-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
-  h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: 0.08em; }
-  .count { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 20px; }
-
-  .card { display: grid; grid-template-rows: auto 1fr; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-  .thumb { display: block; aspect-ratio: 16 / 9; width: 100%; max-width: 100%; overflow: hidden; background: var(--sea); }
+  .card { display: grid; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .thumb { display: block; aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: var(--sea); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
   .thumb:hover img { transform: scale(1.03); }
-  .card-body { display: grid; gap: 10px; padding: 16px 18px 18px; align-content: start; }
-  .card-title { margin: 0; font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1.3; }
+  .card-body { display: grid; gap: 8px; padding: 14px 16px 16px; }
+  .card-title { margin: 0; font-family: var(--display); font-weight: 400; font-size: 21px; line-height: 1.3; }
   .card-title span { color: var(--shrimp); }
-  .card-desc { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+  .card-desc { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.7; }
   .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
-  .tags li { font-size: 11.5px; font-weight: 700; color: var(--ink); background: rgba(255,255,255,0.06); border: 1px solid var(--line); border-radius: 999px; padding: 0 9px; line-height: 1.9; }
-  .play { justify-self: start; margin-top: 4px; display: inline-flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 16px; letter-spacing: 0.08em; color: #2a0d05; background: var(--shrimp); border-radius: 999px; padding: 9px 24px; text-decoration: none; box-shadow: 0 4px 0 #e2502c; }
+  .tags li { font-size: 11.5px; font-weight: 700; background: rgba(255,255,255,0.06); border: 1px solid var(--line); border-radius: 999px; padding: 0 9px; line-height: 1.9; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .play, .peek { display: inline-flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 15px; letter-spacing: 0.06em; border-radius: 999px; padding: 8px 20px; text-decoration: none; cursor: pointer; border: 0; }
+  .play { color: #2a0d05; background: var(--shrimp); box-shadow: 0 4px 0 #e2502c; }
   .play:active { transform: translateY(3px); box-shadow: 0 1px 0 #e2502c; }
+  .peek { color: #04232c; background: #7ef0ff; box-shadow: 0 4px 0 #2fb4e0; }
+  .peek:active { transform: translateY(3px); box-shadow: 0 1px 0 #2fb4e0; }
+  .soon-card { padding: 14px 16px; border-radius: 14px; border: 1px dashed var(--line); color: var(--muted); font-size: 13.5px; }
+  .soon { font-family: var(--display); font-size: 44px; line-height: 1.05; color: #ffd36b; text-shadow: 0 0 18px rgba(255,211,107,0.45); letter-spacing: 0.04em; margin: 0; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--plankton); outline-offset: 3px; }
+  footer { color: var(--muted); font-size: 12px; }
 
-  footer { color: var(--muted); font-size: 12.5px; text-align: center; border-top: 1px solid var(--line); padding-top: 18px; }
+  /* ---------- ふつうのページ（3Dなし） ---------- */
+  body:not(.is3d) .panels { max-width: 760px; margin: 0 auto; padding: 48px 16px; display: grid; gap: 40px; }
+  body:not(.is3d) .panel { display: grid; gap: 14px; }
+  body:not(.is3d) .panel[data-area="overview"], body:not(.is3d) .fold, body:not(.is3d) .peek { display: none; }
+  body:not(.is3d) .panel + .panel { border-top: 1px solid var(--line); padding-top: 32px; }
+  body:not(.is3d) #scene, body:not(.is3d) .topbar, body:not(.is3d) #markers, body:not(.is3d) #hint, body:not(.is3d) #dive { display: none; }
+  body:not(.is3d) #loading { display: none; }
+  body.booting #loading { display: grid; }
 
-  @media (max-width: 520px) {
-    .wrap { padding-block: 36px 40px; gap: 36px; }
-    .profile { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-    .links { justify-content: center; }
-    .avatar { width: 96px; height: 96px; }
+  /* ---------- 3Dモード ---------- */
+  body.is3d { overflow: hidden; height: 100dvh; overscroll-behavior: none; }
+  body.is3d .only-flat { display: none; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  #scene:active { cursor: grabbing; }
+
+  .topbar { position: fixed; z-index: 5; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; pointer-events: none; }
+  .brand { pointer-events: auto; display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .brand img { width: 34px; height: 34px; border-radius: 50%; box-shadow: 0 0 0 2px var(--line); }
+  .brand b { font-family: var(--display); font-weight: 400; font-size: 19px; letter-spacing: 0.04em; text-shadow: 0 2px 10px rgba(0,0,0,0.6); }
+  .brand small { display: block; font-size: 10px; letter-spacing: 0.24em; color: var(--neon); margin-top: -4px; }
+  .nav { pointer-events: auto; display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .nav a { text-decoration: none; font-size: 13.5px; font-weight: 700; padding: 6px 14px; border-radius: 999px; white-space: nowrap; color: var(--muted); }
+  .nav a:hover { color: var(--ink); }
+  .nav a[aria-current="page"] { background: var(--shrimp); color: #2a0d05; }
+
+  .is3d .panels { position: fixed; z-index: 4; inset: 0; pointer-events: none; }
+  .is3d .panel { pointer-events: auto; position: absolute; top: calc(72px + env(safe-area-inset-top, 0px)); right: 16px; width: 380px; max-height: calc(100% - 96px); overflow: auto; overscroll-behavior: contain;
+    display: block; padding: 20px; border-radius: 18px; background: var(--glass); border: 1px solid var(--line); box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); animation: panel-in 0.5s 0.35s both cubic-bezier(.2,.8,.2,1); }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .is3d .avatar { width: 64px; height: 64px; }
+  .is3d .name { font-size: 32px; }
+  .is3d .panel > * + * { margin-top: 14px; }
+  .is3d .card { display: block; }
+  .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .fold { display: none; flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,0.06); color: var(--ink); cursor: pointer; font-size: 14px; }
+  .panel.collapsed > :not(.panel-head) { display: none !important; }
+  .panel.collapsed .fold { transform: rotate(180deg); }
+
+  /* 場所の目印 */
+  #markers { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+  .marker { position: absolute; left: 0; top: 0; pointer-events: auto; display: grid; justify-items: center; gap: 0; padding: 5px 12px 6px; margin: 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.25); background: rgba(9,30,39,0.78); color: var(--ink); font-family: var(--body); cursor: pointer; translate: -50% -100%; transition: opacity 0.25s; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .marker::after { content: ""; position: absolute; left: 50%; bottom: -7px; width: 12px; height: 12px; translate: -50% 0; rotate: 45deg; background: inherit; border-right: 1px solid rgba(255,255,255,0.25); border-bottom: 1px solid rgba(255,255,255,0.25); }
+  .marker .m-label { font-family: var(--display); font-size: 14px; letter-spacing: 0.06em; line-height: 1.3; }
+  .marker .m-sub { font-size: 10.5px; color: var(--muted); font-weight: 700; line-height: 1.3; }
+  .marker:hover { background: rgba(16,49,60,0.95); }
+  .marker.fish { background: rgba(10,70,92,0.85); border-color: #7ef0ff; animation: bob 1.8s ease-in-out infinite; }
+  .marker.fish .m-label { color: #7ef0ff; }
+  @keyframes bob { 50% { margin-top: -5px; } }
+  .marker.off { opacity: 0; pointer-events: none; }
+  .diving #markers, .diving .panels, .diving #hint { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+
+  #hint { position: fixed; z-index: 4; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); font-size: 12px; color: var(--muted); background: var(--glass); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; transition: opacity 0.6s; pointer-events: none; }
+  #hint.done { opacity: 0; }
+
+  #loading { position: fixed; z-index: 10; inset: 0; display: none; place-items: center; background: var(--ground); transition: opacity 0.6s, visibility 0.6s; }
+  #loading.gone { opacity: 0; visibility: hidden; }
+  #loading p { margin: 0; font-family: var(--display); letter-spacing: 0.2em; color: var(--neon); text-shadow: 0 0 14px rgba(255,143,184,0.6); animation: blink 1.2s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.4; } }
+
+  /* 水槽にもぐるときの水 */
+  #dive { position: fixed; z-index: 9; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.9s ease-in; display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 30%, #2fb4e0, #0b4f6c 55%, #062a3a); }
+  #dive.on { opacity: 1; }
+  #dive p { margin: 0; font-family: var(--display); font-size: clamp(26px, 6vw, 44px); color: #fff; letter-spacing: 0.08em; text-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  #dive span { position: absolute; bottom: -20px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.7); animation: rise 1.6s ease-in infinite; }
+  @keyframes rise { to { transform: translateY(-110vh); } }
+
+  @media (max-width: 759px) {
+    .topbar { flex-direction: column; align-items: stretch; gap: 8px; padding-inline: 12px; }
+    .nav { overflow-x: auto; scrollbar-width: none; }
+    .nav a { flex: 1; text-align: center; padding-inline: 8px; }
+    .is3d .panel { top: auto; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 44dvh; padding: 16px; animation-name: sheet-in; }
+    @keyframes sheet-in { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+    .fold { display: grid; place-items: center; }
+    .is3d .profile-row { grid-template-columns: auto minmax(0, 1fr); }
+    .is3d .thumb { aspect-ratio: 21 / 9; }
+    #hint { bottom: auto; top: calc(116px + env(safe-area-inset-top, 0px)); left: 50%; translate: -50% 0; white-space: nowrap; }
   }
-  @media (prefers-reduced-motion: reduce) { .thumb img { transition: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .thumb img, #dive, .is3d .panel { transition: none; animation: none; }
+    .marker.fish { animation: none; }
+  }
 </style>
 </head>
-<body>
-<main class="wrap">
-  <section class="profile" aria-labelledby="name">
-    <img class="avatar" src="avatar.png" alt="えびは のアイコン（緑のえびに真珠のネックレス）" width="112" height="112">
-    <div class="who">
-      <p class="eyebrow">PROFILE</p>
-      <h1 id="name">えびは</h1>
-      <p class="bio">ブラウザで遊べるゲームなどを、AIを使って制作しています。作ったものはこのページにまとめていきます。</p>
-      <div class="links">
-        <a class="link-btn" href="https://x.com/Liebudo_ebiha" target="_blank" rel="noopener">
-          <span class="x"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>
-          @Liebudo_ebiha
-        </a>
+<body class="booting">
+<canvas id="scene" aria-label="えびは LIVE HOUSE の3D模型。受付・バーカン・ステージを移動できます"></canvas>
+
+<header class="topbar">
+  <a class="brand" href="#reception" data-go="reception">
+    <img src="avatar.png" alt="" width="34" height="34">
+    <span><b>えびは</b><small>LIVE HOUSE</small></span>
+  </a>
+  <nav class="nav" aria-label="館内案内">
+    <a href="#reception" data-go="reception">受付</a>
+    <a href="#bar" data-go="bar">バーカン</a>
+    <a href="#stage" data-go="stage">ステージ</a>
+    <a href="#overview" data-go="overview">全体</a>
+  </nav>
+</header>
+
+<div id="markers"></div>
+
+<main class="panels">
+  <!-- 受付：プロフィール -->
+  <section class="panel" id="reception" data-area="reception" aria-labelledby="name">
+    <div class="panel-head">
+      <p class="eyebrow">RECEPTION ・ 受付</p>
+      <button class="fold" type="button" aria-expanded="true" aria-label="パネルをたたむ">▼</button>
+    </div>
+    <div class="profile-row">
+      <img class="avatar" src="avatar.png" alt="えびは のアイコン（緑のえびに真珠のネックレス）" width="84" height="84">
+      <div>
+        <p class="lead only3d">ようこそ、ライブハウスへ</p>
+        <h1 class="name" id="name">えびは</h1>
       </div>
     </div>
+    <p class="bio">ブラウザで遊べるゲームなどを、AIを使って制作しています。作ったものはこのページにまとめていきます。</p>
+    <div class="links">
+      <a class="link-btn" href="https://x.com/Liebudo_ebiha" target="_blank" rel="noopener">
+        <span class="x"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>
+        @Liebudo_ebiha
+      </a>
+    </div>
+    <ul class="guide only3d" aria-label="館内案内">
+      <li><a href="#bar" data-go="bar"><span class="no">01</span><span><b>バーカン</b><small>作品一覧。水槽をのぞくと…？</small></span><span class="arrow">→</span></a></li>
+      <li><a href="#stage" data-go="stage"><span class="no">02</span><span><b>ステージとフロア</b><small>COMING SOON</small></span><span class="arrow">→</span></a></li>
+    </ul>
+    <footer>© えびは</footer>
   </section>
 
-  <section class="works" aria-labelledby="works-title">
-    <div class="works-head">
-      <h2 id="works-title">作品</h2>
-      <span class="count" id="count"></span>
+  <!-- バーカン：作品一覧 -->
+  <section class="panel" id="bar" data-area="bar" aria-labelledby="works-title">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">BAR COUNTER ・ バーカン</p>
+        <h2 class="section-title" id="works-title">作品一覧</h2>
+      </div>
+      <button class="fold" type="button" aria-expanded="true" aria-label="パネルをたたむ">▼</button>
     </div>
-    <div class="grid" id="grid">
-      <!-- 作品を増やすときは、この article をコピーして中身を書き換える -->
-      <article class="card">
-        <a class="thumb" href="ebi-dive/" aria-label="えびダイブ食堂を遊ぶ"><img src="ebi-dive/thumbnail.png" alt="えびダイブ食堂のタイトル画像" loading="lazy" width="1920" height="1080"></a>
-        <div class="card-body">
-          <h3 class="card-title">えびダイブ<span>食堂</span></h3>
-          <p class="card-desc">えびを操って60秒間プランクトンを食べるブラウザゲーム。大きく育てるほど豪華な料理に。ランキング、ハードモード、宝物図鑑、着せかえも。</p>
-          <ul class="tags"><li>ブラウザゲーム</li><li>PC・スマホ</li><li>無料</li></ul>
+    <p class="lead only3d">カウンター横の水槽をのぞくと、作品の世界へもぐれます。</p>
+    <!-- 作品を増やすときは、この article をコピーして中身を書き換える -->
+    <article class="card">
+      <a class="thumb" href="ebi-dive/" aria-label="えびダイブ食堂を遊ぶ"><img src="ebi-dive/thumbnail.png" alt="えびダイブ食堂のタイトル画像" loading="lazy" width="1920" height="1080"></a>
+      <div class="card-body">
+        <h3 class="card-title">えびダイブ<span>食堂</span></h3>
+        <p class="card-desc">えびを操って60秒間プランクトンを食べるブラウザゲーム。大きく育てるほど豪華な料理に。ランキング、ハードモード、宝物図鑑、着せかえも。</p>
+        <ul class="tags"><li>ブラウザゲーム</li><li>PC・スマホ</li><li>無料</li></ul>
+        <div class="actions">
+          <a class="peek" href="ebi-dive/" data-go="dive">水槽をのぞく</a>
           <a class="play" href="ebi-dive/">遊ぶ</a>
         </div>
-      </article>
-    </div>
+      </div>
+    </article>
+    <div class="soon-card">次の作品は準備中です。</div>
   </section>
 
-  <footer>© えびは</footer>
+  <!-- ステージとフロア -->
+  <section class="panel" id="stage" data-area="stage" aria-labelledby="stage-title">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">STAGE &amp; FLOOR ・ ステージとフロア</p>
+        <h2 class="section-title" id="stage-title">ステージ</h2>
+      </div>
+      <button class="fold" type="button" aria-expanded="true" aria-label="パネルをたたむ">▼</button>
+    </div>
+    <p class="soon">COMING<br>SOON</p>
+    <p class="lead">このステージでは、今後なにかが始まる予定です。おたのしみに。</p>
+  </section>
+
+  <!-- 全体 -->
+  <section class="panel" data-area="overview" aria-label="全体">
+    <div class="panel-head">
+      <p class="eyebrow">OVERVIEW ・ 全体</p>
+      <button class="fold" type="button" aria-expanded="true" aria-label="パネルをたたむ">▼</button>
+    </div>
+    <ul class="guide">
+      <li><a href="#reception" data-go="reception"><span class="no">00</span><span><b>受付</b><small>プロフィール</small></span><span class="arrow">→</span></a></li>
+      <li><a href="#bar" data-go="bar"><span class="no">01</span><span><b>バーカン</b><small>作品一覧・水槽からえびダイブ食堂へ</small></span><span class="arrow">→</span></a></li>
+      <li><a href="#stage" data-go="stage"><span class="no">02</span><span><b>ステージとフロア</b><small>COMING SOON</small></span><span class="arrow">→</span></a></li>
+    </ul>
+  </section>
 </main>
-<script>
-  document.getElementById('count').textContent = document.querySelectorAll('#grid .card').length + ' 作品';
+
+<div id="hint">ドラッグで見まわせます ・ 場所をタップで移動</div>
+<div id="loading" aria-hidden="true"><p>OPEN…</p></div>
+<div id="dive" aria-hidden="true"><p>えびダイブ食堂へ</p></div>
+
+<script type="module">
+  // ?flat をつけると3Dなしのふつうのページで見られる
+  const flat = new URLSearchParams(location.search).has('flat');
+  const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
+  const body = document.body;
+  if (!flat && canWebGL) {
+    body.classList.add('is3d');
+    // 水槽にもぐる泡
+    const dive = document.getElementById('dive');
+    for (let i = 0; i < 14; i++) { const s = document.createElement('span'); s.style.left = (5 + Math.random() * 90) + '%'; s.style.animationDelay = (Math.random() * 1.2) + 's'; s.style.scale = String(0.6 + Math.random() * 1.4); dive.appendChild(s); }
+    import('./js/livehouse.js').then(m => m.start()).catch(err => {
+      console.error(err);
+      body.classList.remove('is3d');
+      document.querySelectorAll('.panel').forEach(p => p.hidden = false);
+    }).finally(() => body.classList.remove('booting'));
+  } else {
+    body.classList.remove('booting');
+  }
 </script>
+<script nomodule>document.body.classList.remove('booting');</script>
 </body>
 </html>
