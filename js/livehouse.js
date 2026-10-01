@@ -57,9 +57,11 @@ function bake(node) {
 const VIEWS = {
   overview:  { pos: [12.5, 14, 19],   target: [0, 0.4, -1] },
   reception: { pos: [3.4, 2.3, 12.2], target: [3.4, 1.55, 4.4] },
-  bar:       { pos: [0.2, 2.9, 5.6],  target: [-6.0, 1.3, 0.2] },
-  stage:     { pos: [0, 3.7, 3.4],    target: [0, 1.7, -7.0], maxMul: 1.05 },
+  bar:       { pos: [0.2, 2.9, 5.6],  target: [-6.0, 1.3, 0.2], narrow: { pos: [-0.8, 3.4, 4.8], target: [-6.2, 1.2, 0.7] } },
+  stage:     { pos: [0, 3.7, 3.4],    target: [0, 1.7, -7.0], narrow: { pos: [0, 4.4, 2.4], target: [0, 1.6, -7.2] } },
 };
+// narrow：縦長の画面用。ふつうは被写体から離れて画角を稼ぐが、バーカンとステージでは
+// 離れると受付裏の仕切りがカメラの前に入るので、仕切りより内側の決め打ちの位置から見る
 const AREA_OF_HASH = { '': 'reception', '#reception': 'reception', '#bar': 'bar', '#works': 'bar', '#stage': 'stage', '#floor': 'stage', '#overview': 'overview' };
 const HASH_OF_AREA = { reception: '#reception', bar: '#bar', stage: '#stage', overview: '#overview' };
 
@@ -177,7 +179,8 @@ export async function start() {
   }
 
   function viewFor(name) {
-    const v = VIEWS[name];
+    let v = VIEWS[name];
+    if (v.narrow && distMul > 1.05) return { pos: new THREE.Vector3(...v.narrow.pos), target: new THREE.Vector3(...v.narrow.target) };
     const target = new THREE.Vector3(...v.target);
     const pos = new THREE.Vector3(...v.pos);
     const dir = pos.clone().sub(target);
