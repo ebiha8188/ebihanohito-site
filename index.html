@@ -158,6 +158,37 @@
   #dive span { position: absolute; bottom: -20px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.7); animation: rise 1.6s ease-in infinite; }
   @keyframes rise { to { transform: translateY(-110vh); } }
 
+  /* 入場（ドリンク代） */
+  .entry { display: grid; gap: 8px; padding: 14px; border-radius: 14px; background: rgba(255, 211, 107, 0.08); border: 1px dashed rgba(255, 211, 107, 0.55); }
+  .entry-title { margin: 0; font-weight: 700; }
+  .entry-title b { font-family: var(--display); font-weight: 400; font-size: 20px; color: #ffd36b; margin-left: 4px; }
+  .entry-note { margin: 0; color: var(--muted); font-size: 12px; }
+  .pay { justify-self: start; display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 15px; letter-spacing: 0.04em; color: #2a1a00; background: #ffd36b; border: 0; border-radius: 999px; padding: 9px 20px; cursor: pointer; box-shadow: 0 4px 0 #c99a2e; }
+  .pay:active { transform: translateY(3px); box-shadow: 0 1px 0 #c99a2e; }
+  .pay .coin { width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3c4, #f2c14e 55%, #b8860b); box-shadow: inset 0 0 0 2px rgba(120, 80, 0, 0.35); }
+  .pay.pulse { animation: pay-pulse 0.5s 3; }
+  @keyframes pay-pulse { 50% { transform: scale(1.08); box-shadow: 0 4px 0 #c99a2e, 0 0 0 8px rgba(255, 211, 107, 0.3); } }
+  .entry-open { display: none; }
+  body[data-entry="open"] .entry-locked { display: none; }
+  body[data-entry="open"] .entry-open { display: grid; gap: 6px; }
+  .ticket-chip { display: none; font-family: var(--display); font-size: 11px; letter-spacing: 0.1em; color: #2a1a00; background: #ffd36b; padding: 3px 10px 3px 8px; border-radius: 4px; margin-left: 4px; transform: rotate(-4deg); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+  body[data-entry="open"] .ticket-chip { display: inline-block; animation: chip-in 0.5s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes chip-in { from { transform: rotate(-4deg) scale(0); } }
+  /* 払う前は鍵マーク */
+  body[data-entry="locked"] .nav a[data-go="bar"]::after, body[data-entry="locked"] .nav a[data-go="stage"]::after,
+  body[data-entry="locked"] .guide a[data-go="bar"] .arrow::after, body[data-entry="locked"] .guide a[data-go="stage"] .arrow::after { content: "🔒"; font-size: 11px; margin-left: 3px; }
+  body[data-entry="locked"] .nav a[data-go="bar"], body[data-entry="locked"] .nav a[data-go="stage"] { opacity: 0.65; }
+  .marker.locked:not(.off) { opacity: 0.6; }
+  .marker.locked .m-sub::after { content: " 🔒"; }
+  #speech { position: fixed; left: 0; top: 0; z-index: 3; pointer-events: none; translate: -50% -100%; transition: opacity 0.3s; }
+  #speech span { display: block; max-width: 220px; padding: 8px 14px; border-radius: 16px; background: #fffaf0; color: #2a1a10; font-weight: 700; font-size: 13.5px; line-height: 1.5; box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+  #speech span::after { content: ""; position: absolute; left: 50%; bottom: -7px; width: 14px; height: 14px; translate: -50% 0; rotate: 45deg; background: #fffaf0; }
+  #speech.off { opacity: 0; }
+  #toast { position: fixed; z-index: 8; left: 50%; top: calc(76px + env(safe-area-inset-top, 0px)); translate: -50% 0; padding: 8px 18px; border-radius: 999px; background: #ffd36b; color: #2a1a00; font-weight: 700; font-size: 13.5px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); opacity: 0; transform: translateY(-8px); transition: opacity 0.3s, transform 0.3s; pointer-events: none; white-space: nowrap; }
+  #toast.on { opacity: 1; transform: none; }
+  body:not(.is3d) #speech, body:not(.is3d) #toast, body:not(.is3d) .entry { display: none; }
+  .diving #speech { opacity: 0; }
+
   /* 切り分け用パネル（?debug） */
   #dbg { position: fixed; z-index: 20; left: 8px; bottom: 8px; width: min(320px, calc(100% - 16px)); max-height: 70dvh; overflow: auto; background: rgba(0,0,0,0.88); color: #fff; font-size: 12.5px; line-height: 1.5; padding: 10px 12px; border-radius: 10px; border: 1px solid #555; display: grid; gap: 4px; }
   #dbg .dbg-stat { color: #c6ef6e; font-variant-numeric: tabular-nums; margin-bottom: 4px; }
@@ -188,6 +219,7 @@
   <a class="brand" href="#reception" data-go="reception">
     <img src="avatar.png" alt="" width="34" height="34">
     <span><b>えびは</b><small>LIVE HOUSE</small></span>
+    <span class="ticket-chip" aria-label="ドリンクチケット受け取り済み">1 DRINK</span>
   </a>
   <nav class="nav" aria-label="館内案内">
     <a href="#reception" data-go="reception">受付</a>
@@ -219,6 +251,17 @@
         <span class="x"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>
         @Liebudo_ebiha
       </a>
+    </div>
+    <div class="entry only3d" aria-live="polite">
+      <div class="entry-locked">
+        <p class="entry-title">入場には 1ドリンク代<b>¥500</b></p>
+        <p class="entry-note">本物のお金はかかりません。ボタンを押すだけで払えます。</p>
+        <button class="pay" id="pay" type="button"><span class="coin" aria-hidden="true"></span>¥500 を払って入場する</button>
+      </div>
+      <div class="entry-open">
+        <p class="entry-title">🎫 ドリンクチケットを受け取りました</p>
+        <p class="entry-note">中へどうぞ。バーカンやステージに入れます。</p>
+      </div>
     </div>
     <ul class="guide only3d" aria-label="館内案内">
       <li><a href="#bar" data-go="bar"><span class="no">01</span><span><b>バーカン</b><small>作品一覧。水槽をのぞくと…？</small></span><span class="arrow">→</span></a></li>
@@ -280,13 +323,15 @@
   </section>
 </main>
 
+<div id="speech" class="off" aria-live="polite"><span></span></div>
+<div id="toast" role="status"></div>
 <div id="hint">ドラッグで見まわせます ・ 場所をタップで移動</div>
 <div id="loading" aria-hidden="true"><p>OPEN…</p></div>
 <div id="dive" aria-hidden="true"><p>えびダイブ食堂へ</p></div>
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100207';
+  const ASSET_VERSION = '2026100208';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();

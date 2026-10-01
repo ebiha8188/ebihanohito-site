@@ -109,6 +109,12 @@ export async function start() {
   const look = { yaw: 0, pitch: 0, yawTo: 0, pitchTo: 0 }; // ドラッグで見回す量
   const offset = { x: 0, y: 0, xTo: 0, yTo: 0 };         // パネルを避ける画面ずらし
   let diving = false;
+  // 入場：受付でドリンク代を払うまで、バーカンとステージには入れない（このタブの間は覚えておく）
+  const ENTRY_KEY = 'ebiha-entry';
+  let entered = false;
+  try { entered = sessionStorage.getItem(ENTRY_KEY) === '1'; } catch (e) { /* 保存できなくても動く */ }
+  let pending = null; // 払う前に行こうとした場所。払ったらそこへ
+  const LOCKED = new Set(['bar', 'stage', 'dive']);
 
   const ui = {
     root: document.body,
@@ -118,7 +124,12 @@ export async function start() {
     loading: document.getElementById('loading'),
     dive: document.getElementById('dive'),
     hint: document.getElementById('hint'),
+    pay: document.getElementById('pay'),
+    speech: document.getElementById('speech'),
+    toast: document.getElementById('toast'),
   };
+  ui.root.dataset.entry = entered ? 'open' : 'locked';
+  if (entered) world.openGate(true);
 
   // ---------- 画面サイズ ----------
   let W = 1, H = 1, distMul = 1;
@@ -222,10 +233,46 @@ export async function start() {
     }
   });
 
+  // 利用者の操作による移動はすべてここを通す
+  function nav(name, opts) {
+    if (!entered && LOCKED.has(name)) { pending = name; denyEntry(); return; }
+    if (name === 'dive') dive(); else go(name, opts);
+  }
+  let toastTimer = 0;
+  function toast(text) {
+    ui.toast.textContent = text;
+    ui.toast.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => ui.toast.classList.remove('on'), 2400);
+  }
+  function denyEntry() {
+    if (area !== 'reception') go('reception');
+    say('先にドリンク代をお願いします〜！');
+    toast('受付でドリンク代を払うと、中に入れます');
+    ui.pay.classList.remove('pulse'); void ui.pay.offsetWidth; ui.pay.classList.add('pulse');
+  }
+  function say(text) { ui.speech.querySelector('span').textContent = text; }
+  function pay() {
+    if (entered) return;
+    entered = true;
+    try { sessionStorage.setItem(ENTRY_KEY, '1'); } catch (e) { /* 保存できなくても入れる */ }
+    ui.pay.disabled = true;
+    say('まいど！ドリンクチケットどうぞ');
+    // コインは画面の少し手前・下から投げる
+    const from = new THREE.Vector3(0, -0.35, -1.0).applyQuaternion(camera.quaternion).add(camera.position);
+    world.pay(from, reduceMotion, () => {
+      ui.root.dataset.entry = 'open';
+      say('いってらっしゃい〜！');
+      toast('ドリンクチケットを受け取りました。中へどうぞ！');
+      if (pending) { const to = pending; pending = null; setTimeout(() => nav(to), reduceMotion ? 0 : 500); }
+    });
+  }
+  ui.pay.addEventListener('click', pay);
+  say(entered ? 'いってらっしゃい〜！' : 'いらっしゃいませ！ドリンク代 500円です');
+
   ui.navBtns.forEach(b => b.addEventListener('click', e => {
     e.preventDefault();
-    const name = b.dataset.go;
-    if (name === 'dive') dive(); else go(name);
+    nav(b.dataset.go);
   }));
   document.querySelectorAll('.panel .fold').forEach(b => b.addEventListener('click', () => {
     const p = b.closest('.panel');
@@ -233,7 +280,11 @@ export async function start() {
     b.setAttribute('aria-expanded', String(!p.classList.contains('collapsed')));
     requestAnimationFrame(updateOffsetTarget);
   }));
-  addEventListener('popstate', () => go(AREA_OF_HASH[location.hash] || 'reception', { push: false }));
+  addEventListener('popstate', () => {
+    const to = AREA_OF_HASH[location.hash] || 'reception';
+    if (!entered && LOCKED.has(to)) { pending = to; go('reception'); return; }
+    go(to, { push: false });
+  });
   addEventListener('resize', resize);
   if ('ResizeObserver' in window) new ResizeObserver(() => updateOffsetTarget()).observe(document.querySelector('.panels'));
 
@@ -250,17 +301,27 @@ export async function start() {
     b.className = 'marker' + (d.fish ? ' fish' : '');
     b.innerHTML = `<span class="m-label">${d.label}</span><span class="m-sub">${d.sub}</span>`;
     b.setAttribute('aria-label', `${d.label}（${d.sub}）へ移動`);
-    b.addEventListener('click', () => d.id === 'dive' ? dive() : go(d.id));
+    b.addEventListener('click', () => nav(d.id));
     ui.markers.appendChild(b);
     return { ...d, el: b, v: new THREE.Vector3(...d.at) };
   });
+  const speechAt = new THREE.Vector3();
+  function placeSpeech() {
+    const on = area === 'reception' && !diving && !tween;
+    ui.speech.classList.toggle('off', !on);
+    if (!on) return;
+    world.speechAnchor(speechAt).project(camera);
+    ui.speech.style.transform = `translate(${((speechAt.x * 0.5 + 0.5) * W).toFixed(1)}px, ${((-speechAt.y * 0.5 + 0.5) * H).toFixed(1)}px)`;
+  }
   function placeMarkers() {
+    placeSpeech();
     for (const m of markers) {
       const show = !diving && (m.id === 'dive' ? (area === 'bar' || area === 'overview') : m.id !== area);
       m.v.set(...m.at);
       m.v.project(camera);
       const visible = show && m.v.z < 1 && Math.abs(m.v.x) < 1.05 && Math.abs(m.v.y) < 1.05;
       m.el.classList.toggle('off', !visible);
+      m.el.classList.toggle('locked', !entered && LOCKED.has(m.id));
       // setViewOffset のずれは projection に入っているので、そのまま画面座標になる
       if (visible) m.el.style.transform = `translate(${((m.v.x * 0.5 + 0.5) * W).toFixed(1)}px, ${((-m.v.y * 0.5 + 0.5) * H).toFixed(1)}px)`;
     }
@@ -315,8 +376,8 @@ export async function start() {
     drag = null;
     if (wasClick && e.type === 'pointerup') {
       const g = pick(e.clientX, e.clientY);
-      if (g === 'dive') dive();
-      else if (g && g !== area) go(g);
+      if (g === 'reception' && area === 'reception' && !entered) pay();
+      else if (g && g !== area) nav(g);
     }
   };
   canvas.addEventListener('pointerup', endDrag);
@@ -325,7 +386,7 @@ export async function start() {
   addEventListener('keydown', e => {
     if (e.target.closest && e.target.closest('input, textarea')) return;
     const keys = { '1': 'reception', '2': 'bar', '3': 'stage', '0': 'overview' };
-    if (keys[e.key]) go(keys[e.key]);
+    if (keys[e.key]) nav(keys[e.key]);
   });
 
   // ---------- ループ ----------
@@ -387,7 +448,8 @@ export async function start() {
 
   resize();
   // 最初は模型全体を見せてから、受付（またはURLの場所）へ
-  const first = AREA_OF_HASH[location.hash] || 'reception';
+  let first = AREA_OF_HASH[location.hash] || 'reception';
+  if (!entered && LOCKED.has(first)) { pending = first; first = 'reception'; }
   area = 'overview';
   const ov = viewFor('overview'); cam.pos.copy(ov.pos); cam.target.copy(ov.target);
   requestAnimationFrame(frame);
@@ -637,7 +699,9 @@ class World {
     }
     const stand = this.box(0.5, 0.36, 0.04, this.mat('#1d1a20'), 0.1, 1.31, -0.15, g);
     stand.rotation.x = -0.25;
-    const ticket = textPlane(['TICKET', 'FREE'], { w: 256, h: 180, bg: '#f5f1e8', color: '#7a2f24', font: `52px ${FONT_DISPLAY}`, line: 64 }, 0.44, 0.31);
+    // お金を置くトレイ
+    this.cyl(0.15, 0.12, 0.025, this.mat('#2a2a30'), 0.62, 1.145, 0.2, g, 18);
+    const ticket = textPlane(['1 DRINK', '¥500'], { w: 256, h: 180, bg: '#f5f1e8', color: '#7a2f24', font: `52px ${FONT_DISPLAY}`, line: 64 }, 0.44, 0.31);
     ticket.position.set(0.1, 1.32, -0.12); ticket.rotation.x = -0.25;
     g.add(ticket);
 
@@ -646,8 +710,12 @@ class World {
     ebiha.position.set(-0.8, 0.35, -0.9);
     ebiha.scale.setScalar(1.05);
     g.add(ebiha);
+    this.ebiha = ebiha;
     this.anim.push(t => {
-      ebiha.position.y = 0.35 + Math.sin(t * 2) * 0.03;
+      // 払ってもらったら、ぴょんと跳ねる
+      let hop = 0;
+      if (this.hopAt != null) { const k = (t - this.hopAt) / 0.7; if (k >= 0 && k <= 1) hop = Math.sin(Math.PI * k) * 0.4; }
+      ebiha.position.y = 0.35 + Math.sin(t * 2) * 0.03 + hop;
       ebiha.rotation.y = Math.sin(t * 0.7) * 0.18;
       ebiha.userData.wave(t);
     });
@@ -673,6 +741,8 @@ class World {
     });
     // 観葉植物
     this.plant(-7.3, 8.0);
+    this.gate();
+    this.coin();
     this.plant(7.4, 4.2);
     // 床のマット
     const mat = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.6), this.mat('#6b1f2a', { polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
@@ -681,6 +751,74 @@ class World {
 
     this.hotspot('reception', [4.2, 3.0, 2.4, 3.2, 1.5, 5.0]);
   }
+
+  // ロビーとホールの境目のベルトパーティション。払うとベルトが巻き取られる
+  gate() {
+    const metal = this.mat('#b8bec6');
+    const beltM = this.mat('#c0392b', { emissive: '#c0392b', emissiveIntensity: 0.25 });
+    const xs = [-7.7, -5.0, -2.3, 0.4, 1.25], z = 3.75, h = 0.92;
+    this.belts = [];
+    xs.forEach((x, i) => {
+      this.cyl(0.035, 0.035, h, metal, x, h / 2, z, this.scene, 10);
+      this.cyl(0.17, 0.19, 0.04, metal, x, 0.02, z, this.scene, 16);
+      this.cyl(0.06, 0.06, 0.1, metal, x, h, z, this.scene, 12);
+      if (i === xs.length - 1) return;
+      const len = xs[i + 1] - x;
+      const belt = new THREE.Group();
+      const geo = new THREE.BoxGeometry(len, 0.06, 0.012); geo.translate(len / 2, 0, 0);
+      const m = new THREE.Mesh(geo, beltM); m.userData.keep = true;
+      belt.add(m);
+      belt.position.set(x, h - 0.03, z);
+      belt.userData.keep = true;
+      this.scene.add(belt);
+      this.belts.push(belt);
+    });
+    this.gateAt = null;
+    this.anim.push(t => {
+      if (this.gateAt == null) return;
+      if (this.gateAt === -1) this.gateAt = t;
+      const k = Math.min(1, Math.max(0, (t - this.gateAt) / 0.6));
+      const e = 1 - Math.pow(1 - k, 3);
+      for (const b of this.belts) { b.scale.x = Math.max(0.001, 1 - e); b.visible = k < 1; }
+    });
+  }
+  openGate(instant) {
+    if (instant) { for (const b of this.belts) b.visible = false; this.gateAt = null; return; }
+    this.gateAt = -1;
+  }
+
+  coin() {
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.012, 20), this.mat('#f2c14e', { emissive: '#b8860b', emissiveIntensity: 0.35 }));
+    c.visible = false; c.userData.keep = true;
+    this.scene.add(c);
+    this.coinMesh = c;
+    this.coinFly = null;
+    const to = new THREE.Vector3(3.2 + 0.62, 1.175, 5.4 + 0.2);
+    this.anim.push(t => {
+      const f = this.coinFly;
+      if (!f) return;
+      if (f.t0 == null) f.t0 = t;
+      const k = Math.min(1, (t - f.t0) / 0.8);
+      c.position.lerpVectors(f.from, to, k);
+      c.position.y += Math.sin(Math.PI * k) * 0.6;
+      c.rotation.set(Math.PI / 2 * (1 - k) + k * 0, k * 12, 0);
+      if (k >= 1) {
+        c.rotation.set(0, 0, 0);
+        this.coinFly = null;
+        this.hopAt = t + 0.05;
+        setTimeout(() => this.openGate(false), 450);
+        setTimeout(f.done, 1100);
+      }
+    });
+  }
+  // 払うアクション：コインがトレイへ → えびはが跳ねる → ベルトが外れる
+  pay(from, instant, done) {
+    const c = this.coinMesh;
+    c.visible = true;
+    if (instant) { c.position.set(3.82, 1.175, 5.6); this.openGate(true); done(); return; }
+    this.coinFly = { from: from.clone(), done };
+  }
+  speechAnchor(v) { return this.ebiha.getWorldPosition(v).add(new THREE.Vector3(0.15, 2.05, 0)); }
 
   plant(x, z) {
     const pot = this.mat('#c86f4a');
