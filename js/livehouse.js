@@ -975,7 +975,6 @@ class World {
     this.scene.add(g);
     const sH = 0.7;
     const front = this.mat('#111116', { emissive: '#5f8bff', emissiveIntensity: 0, unique: true });
-    this.addHover('stage', front, 0, 0.22);
     const deck = this.mat('#3a2a20');
     const stageBox = new THREE.Mesh(new THREE.BoxGeometry(11, sH, 3.4), [front, front, deck, front, front, front]);
     stageBox.position.set(0, sH / 2, -7.2); g.add(stageBox);
