@@ -98,13 +98,18 @@ export async function start() {
   const world = new World(scene);
   const loader = new THREE.TextureLoader();
   world.build(loader);
-  const firstSong = document.querySelector('.song[data-yt]');
-  if (firstSong) world.setSong({
-    id: firstSong.dataset.yt,
-    title: firstSong.querySelector('.song-title').textContent.trim(),
-    artist: firstSong.querySelector('.song-artist').textContent.trim(),
-    url: firstSong.querySelector('.song-thumb').href,
-  });
+  // ステージのスクリーンには、パネルの先頭の曲を映す（再生リストが読めて入れ替わったら映し直す）
+  const showFirstSong = () => {
+    const li = document.querySelector('.song[data-yt]');
+    if (li) world.setSong({
+      id: li.dataset.yt,
+      title: li.querySelector('.song-title').textContent.trim(),
+      artist: li.querySelector('.song-artist').textContent.trim(),
+      url: li.querySelector('.song-thumb').href,
+    });
+  };
+  showFirstSong();
+  addEventListener('songs:update', showFirstSong);
 
   // ---------- 状態 ----------
   let area = null;
@@ -1042,14 +1047,17 @@ class World {
       for (let x2 = 0; x2 < W; x2 += 6) sg.fillRect(x2, 0, 2, H);
       screenTex.needsUpdate = true;
     };
+    let songToken = 0;
     this.setSong = async song => {
+      const my = ++songToken; // 後から来た曲を優先（古い曲の読み込みが遅れて上書きしないように）
       this.songUrl = song.url;
       // 曲名の字をフォントで描けるよう、先に読み込む
       try { await Promise.all([document.fonts.load(`40px ${FONT_DISPLAY}`, 'おすすめの曲'), document.fonts.load(`700 46px ${FONT_BODY}`, song.title + song.artist)]); } catch (e) { /* 読めなくても描く */ }
+      if (my !== songToken) return;
       drawScreen(song, null);
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.onload = () => drawScreen(song, img);
+      img.onload = () => { if (my === songToken) drawScreen(song, img); };
       img.src = `https://i.ytimg.com/vi/${song.id}/hqdefault.jpg`;
     };
     drawScreen(null, null);

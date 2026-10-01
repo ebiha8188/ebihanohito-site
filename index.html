@@ -174,6 +174,8 @@
   .song-here, .song-out { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 999px; cursor: pointer; text-decoration: none; }
   .song-here { border: 0; background: #ff3d3d; color: #fff; }
   .song-out { border: 1px solid var(--line); color: var(--ink); background: rgba(255,255,255,0.05); }
+  .song-more { margin: 0; font-size: 13px; }
+  .song-more a { color: var(--muted); }
 
   /* 入場（ドリンク代） */
   .entry { display: grid; gap: 8px; padding: 14px; border-radius: 14px; background: rgba(255, 211, 107, 0.08); border: 1px dashed rgba(255, 211, 107, 0.55); }
@@ -324,22 +326,51 @@
     </div>
     <p class="lead">えびはのおすすめの曲。サムネを押すと YouTube で開きます。</p>
     <ul class="songs">
-      <!-- 曲を増やすときは、この li をコピーして data-yt（動画ID）と中身を書き換える。表示は毎回ランダムな順で最大5曲、先頭の曲がステージのスクリーンに映る -->
-      <li class="song" data-yt="MFwtpM21wWc">
-        <a class="song-thumb" href="https://www.youtube.com/watch?v=MFwtpM21wWc" target="_blank" rel="noopener" aria-label="YouTubeで開く：【MV】INMU KING / YAJU-MC">
-          <img src="https://i.ytimg.com/vi/MFwtpM21wWc/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
+      <!-- YouTube の再生リスト「えびはおすすめ曲」から自動で入れ替わる（/api/songs）。ここは読めなかったときの控え -->
+      <li class="song" data-yt="RfgBlzL_AhQ">
+        <a class="song-thumb" href="https://www.youtube.com/watch?v=RfgBlzL_AhQ" target="_blank" rel="noopener" aria-label="YouTubeで開く：【LIVE映像】Dear Mr. Sunrise「夢を乗せて」 260809 at LIQUIDROOM">
+          <img src="https://i.ytimg.com/vi/RfgBlzL_AhQ/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
           <span class="yt-play" aria-hidden="true"></span>
         </a>
         <div class="song-body">
-          <p class="song-title">【MV】INMU KING / YAJU-MC</p>
-          <p class="song-artist">やじゅまん</p>
+          <p class="song-title">【LIVE映像】Dear Mr. Sunrise「夢を乗せて」 260809 at LIQUIDROOM</p>
+          <p class="song-artist">さとりモンスター</p>
           <div class="song-actions">
             <button class="song-here" type="button">▶ ここで再生</button>
-            <a class="song-out" href="https://www.youtube.com/watch?v=MFwtpM21wWc" target="_blank" rel="noopener">YouTubeで開く ↗</a>
+            <a class="song-out" href="https://www.youtube.com/watch?v=RfgBlzL_AhQ" target="_blank" rel="noopener">YouTubeで開く ↗</a>
+          </div>
+        </div>
+      </li>
+      <li class="song" data-yt="Ic09I1cEIQs">
+        <a class="song-thumb" href="https://www.youtube.com/watch?v=Ic09I1cEIQs" target="_blank" rel="noopener" aria-label="YouTubeで開く：いつかの夜に僕たちが、（ITSUYORU,）/『Dejavu』MV">
+          <img src="https://i.ytimg.com/vi/Ic09I1cEIQs/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
+          <span class="yt-play" aria-hidden="true"></span>
+        </a>
+        <div class="song-body">
+          <p class="song-title">いつかの夜に僕たちが、（ITSUYORU,）/『Dejavu』MV</p>
+          <p class="song-artist">いつかの夜に僕たちが、ITSUYORU,</p>
+          <div class="song-actions">
+            <button class="song-here" type="button">▶ ここで再生</button>
+            <a class="song-out" href="https://www.youtube.com/watch?v=Ic09I1cEIQs" target="_blank" rel="noopener">YouTubeで開く ↗</a>
+          </div>
+        </div>
+      </li>
+      <li class="song" data-yt="UKYAMoC1PS8">
+        <a class="song-thumb" href="https://www.youtube.com/watch?v=UKYAMoC1PS8" target="_blank" rel="noopener" aria-label="YouTubeで開く：【LIVE映像】BitterSweetSatori 「夢を乗せて」 260809 at LIQUIDROOM">
+          <img src="https://i.ytimg.com/vi/UKYAMoC1PS8/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
+          <span class="yt-play" aria-hidden="true"></span>
+        </a>
+        <div class="song-body">
+          <p class="song-title">【LIVE映像】BitterSweetSatori 「夢を乗せて」 260809 at LIQUIDROOM</p>
+          <p class="song-artist">さとりモンスター</p>
+          <div class="song-actions">
+            <button class="song-here" type="button">▶ ここで再生</button>
+            <a class="song-out" href="https://www.youtube.com/watch?v=UKYAMoC1PS8" target="_blank" rel="noopener">YouTubeで開く ↗</a>
           </div>
         </div>
       </li>
     </ul>
+    <p class="song-more"><a href="https://www.youtube.com/playlist?list=PLbQ2zSt599Co" target="_blank" rel="noopener">再生リスト「えびはおすすめ曲」をぜんぶ見る ↗</a></p>
   </section>
 
   <!-- 全体 -->
@@ -364,7 +395,7 @@
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100213';
+  const ASSET_VERSION = '2026100214';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
@@ -384,26 +415,50 @@
   }
 </script>
 <script>
-  // おすすめの曲：来るたびにランダムな順にして、上から5曲だけ見せる（3Dより先に並べ替える）
+  // おすすめの曲：再生リストの曲から、来るたびにランダムに5曲。先頭の曲がステージのスクリーンに映る
   (() => {
     const list = document.querySelector('.songs');
     if (!list) return;
-    const items = [...list.querySelectorAll('.song')];
-    for (let i = items.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [items[i], items[j]] = [items[j], items[i]]; }
-    items.forEach((li, i) => { list.appendChild(li); li.hidden = i >= 5; });
+    const tpl = list.querySelector('.song').cloneNode(true);
+    const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const bind = li => li.querySelector('.song-here').addEventListener('click', () => {
+      const thumb = li.querySelector('.song-thumb');
+      const f = document.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + li.dataset.yt + '?autoplay=1&rel=0';
+      f.title = li.querySelector('.song-title').textContent;
+      f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      f.allowFullscreen = true;
+      const box = Object.assign(document.createElement('div'), { className: 'song-thumb' });
+      box.appendChild(f);
+      thumb.replaceWith(box);
+      const btn = li.querySelector('.song-here'); btn.disabled = true; btn.textContent = '再生中';
+    });
+    const make = song => {
+      const li = tpl.cloneNode(true);
+      const url = 'https://www.youtube.com/watch?v=' + song.id;
+      li.dataset.yt = song.id;
+      li.querySelector('.song-thumb').href = url;
+      li.querySelector('.song-thumb').setAttribute('aria-label', 'YouTubeで開く：' + song.title);
+      li.querySelector('.song-thumb img').src = 'https://i.ytimg.com/vi/' + song.id + '/hqdefault.jpg';
+      li.querySelector('.song-title').textContent = song.title;
+      li.querySelector('.song-artist').textContent = song.artist;
+      li.querySelector('.song-out').href = url;
+      return li;
+    };
+    const render = songs => {
+      list.querySelectorAll('.song').forEach(li => li.remove());
+      shuffle(songs.slice()).slice(0, 5).forEach(song => { const li = make(song); bind(li); list.appendChild(li); });
+      dispatchEvent(new Event('songs:update'));
+    };
+    // まず控えの曲で並べて、再生リストが読めたら入れ替える
+    const fallback = [...list.querySelectorAll('.song')].map(li => ({ id: li.dataset.yt, title: li.querySelector('.song-title').textContent, artist: li.querySelector('.song-artist').textContent }));
+    render(fallback);
+    fetch('/api/songs', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => {
+      if (!d || !Array.isArray(d.songs) || !d.songs.length) return;
+      const same = d.songs.length === fallback.length && d.songs.every(x => fallback.some(f => f.id === x.id));
+      if (!same) render(d.songs);
+    }).catch(() => {});
   })();
-  document.querySelectorAll('.song .song-here').forEach(btn => btn.addEventListener('click', () => {
-    const li = btn.closest('.song'), thumb = li.querySelector('.song-thumb');
-    if (thumb.querySelector('iframe')) return;
-    const f = document.createElement('iframe');
-    f.src = 'https://www.youtube-nocookie.com/embed/' + li.dataset.yt + '?autoplay=1&rel=0';
-    f.title = li.querySelector('.song-title').textContent;
-    f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
-    f.allowFullscreen = true;
-    thumb.replaceWith(Object.assign(document.createElement('div'), { className: 'song-thumb' }));
-    li.querySelector('.song-thumb').appendChild(f);
-    btn.disabled = true; btn.textContent = '再生中';
-  }));
 </script>
 <script nomodule>document.body.classList.remove('booting');</script>
 </body>
