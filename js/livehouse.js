@@ -1005,13 +1005,16 @@ class World {
     const screenTex = new THREE.CanvasTexture(screenCanvas);
     screenTex.colorSpace = THREE.SRGBColorSpace;
     const wrap = (text, maxW, maxLines) => {
-      const out = []; let line = '';
+      const out = []; let line = '', cut = false;
       for (const ch of text) {
-        if (sg.measureText(line + ch).width > maxW && line) { out.push(line); line = ''; if (out.length === maxLines) break; }
+        if (sg.measureText(line + ch).width > maxW && line) {
+          out.push(line); line = '';
+          if (out.length === maxLines) { cut = true; break; }
+        }
         line += ch;
       }
-      if (out.length < maxLines && line) out.push(line);
-      else if (line) out[maxLines - 1] = out[maxLines - 1].slice(0, -1) + '…';
+      if (!cut && line) out.push(line);
+      if (cut) out[maxLines - 1] = out[maxLines - 1].slice(0, -1) + '…';
       return out;
     };
     const drawScreen = (song, img) => {
