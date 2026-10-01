@@ -254,9 +254,9 @@
     </div>
     <div class="entry only3d" aria-live="polite">
       <div class="entry-locked">
-        <p class="entry-title">入場には 1ドリンク代<b>¥500</b></p>
+        <p class="entry-title">入場には 1ドリンク代<b>¥700</b></p>
         <p class="entry-note">本物のお金はかかりません。ボタンを押すだけで払えます。</p>
-        <button class="pay" id="pay" type="button"><span class="coin" aria-hidden="true"></span>¥500 を払って入場する</button>
+        <button class="pay" id="pay" type="button"><span class="coin" aria-hidden="true"></span>¥700 を払って入場する</button>
       </div>
       <div class="entry-open">
         <p class="entry-title">🎫 ドリンクチケットを受け取りました</p>
@@ -331,7 +331,7 @@
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100208';
+  const ASSET_VERSION = '2026100209';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();

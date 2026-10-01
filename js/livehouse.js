@@ -268,7 +268,7 @@ export async function start() {
     });
   }
   ui.pay.addEventListener('click', pay);
-  say(entered ? 'いってらっしゃい〜！' : 'いらっしゃいませ！ドリンク代 500円です');
+  say(entered ? 'いってらっしゃい〜！' : 'いらっしゃいませ！ドリンク代 700円です');
 
   ui.navBtns.forEach(b => b.addEventListener('click', e => {
     e.preventDefault();
@@ -701,7 +701,7 @@ class World {
     stand.rotation.x = -0.25;
     // お金を置くトレイ
     this.cyl(0.15, 0.12, 0.025, this.mat('#2a2a30'), 0.62, 1.145, 0.2, g, 18);
-    const ticket = textPlane(['1 DRINK', '¥500'], { w: 256, h: 180, bg: '#f5f1e8', color: '#7a2f24', font: `52px ${FONT_DISPLAY}`, line: 64 }, 0.44, 0.31);
+    const ticket = textPlane(['1 DRINK', '¥700'], { w: 256, h: 180, bg: '#f5f1e8', color: '#7a2f24', font: `52px ${FONT_DISPLAY}`, line: 64 }, 0.44, 0.31);
     ticket.position.set(0.1, 1.32, -0.12); ticket.rotation.x = -0.25;
     g.add(ticket);
 
