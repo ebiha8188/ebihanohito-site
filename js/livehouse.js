@@ -1158,7 +1158,9 @@ class World {
       const s = makeShrimp({ body: colors[i], belly: '#ffd2bd' });
       s.scale.setScalar(0.55 + (i % 3) * 0.05);
       s.position.set(x, 0, z);
-      s.rotation.y = Math.PI + Math.atan2(x, -7 - z) * -0.6;
+      // 顔はローカルの +z。バーカン寄りのえびはカウンターを、ほかはステージの真ん中を向く
+      const [tx, tz] = x <= -3 ? [-5.2, z] : [0, -7.2];
+      s.rotation.y = Math.atan2(tx - x, tz - z);
       this.scene.add(s); this.dbg.crowd.push(s);
       this.anim.push(t => {
         s.position.y = Math.abs(Math.sin(t * 2.6 + i * 0.9)) * 0.08;
@@ -1255,10 +1257,12 @@ function makeShrimp({ body = '#ff7a57', belly = '#ffc2a8', pearls = false, bowti
   });
   if (pearls) {
     const pm = M({ color: '#fbf6ee', roughness: 0.15, metalness: 0.3, emissive: '#6d665d', emissiveIntensity: 0.2 });
-    for (let i = 0; i < 14; i++) {
-      const a = -Math.PI * 0.95 + (i / 13) * Math.PI * 0.9 + Math.PI * 0.5;
+    // 首まわりを一周。前（+z）ほど少し垂れる
+    const n = 20;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
       const p = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), pm);
-      p.position.set(Math.cos(a) * 0.3, 1.0 + Math.abs(Math.cos(a)) * 0.05 - 0.04, Math.sin(a) * 0.26 + 0.05);
+      p.position.set(Math.cos(a) * 0.31, 0.99 - (Math.sin(a) * 0.5 + 0.5) * 0.06, Math.sin(a) * 0.29 + 0.01);
       g.add(p);
     }
   }
