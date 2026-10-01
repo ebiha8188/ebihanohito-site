@@ -98,6 +98,13 @@ export async function start() {
   const world = new World(scene);
   const loader = new THREE.TextureLoader();
   world.build(loader);
+  const firstSong = document.querySelector('.song[data-yt]');
+  if (firstSong) world.setSong({
+    id: firstSong.dataset.yt,
+    title: firstSong.querySelector('.song-title').textContent.trim(),
+    artist: firstSong.querySelector('.song-artist').textContent.trim(),
+    url: firstSong.querySelector('.song-thumb').href,
+  });
 
   // ---------- 状態 ----------
   let area = null;
@@ -293,7 +300,7 @@ export async function start() {
     { id: 'reception', label: '受付', sub: 'プロフィール', at: [3.4, 3.5, 4.6] },
     { id: 'bar', label: 'バーカン', sub: '作品一覧', at: [-6.6, 3.55, -1.0] },
     { id: 'dive', label: '水槽をのぞく', sub: 'えびダイブ食堂へ', at: [-6.15, 2.55, 2.45], fish: true },
-    { id: 'stage', label: 'ステージ', sub: 'COMING SOON', at: [0, 4.6, -7.0] },
+    { id: 'stage', label: 'ステージ', sub: 'おすすめの曲', at: [0, 4.6, -7.0] },
   ];
   const markers = markerDefs.map(d => {
     const b = document.createElement('button');
@@ -337,7 +344,10 @@ export async function start() {
     ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     const hits = raycaster.intersectObjects(world.hotspots, true);
+    const songHit = hits.some(h => h.object.userData.go === 'song');
+    if (songHit && area === 'stage' && world.songUrl) return 'song';
     for (const h of hits) {
+      if (h.object.userData.go === 'song') continue;
       let o = h.object;
       while (o && !o.userData.go) o = o.parent;
       if (o) return o.userData.go;
@@ -376,7 +386,8 @@ export async function start() {
     drag = null;
     if (wasClick && e.type === 'pointerup') {
       const g = pick(e.clientX, e.clientY);
-      if (g === 'reception' && area === 'reception' && !entered) pay();
+      if (g === 'song') window.open(world.songUrl, '_blank', 'noopener');
+      else if (g === 'reception' && area === 'reception' && !entered) pay();
       else if (g && g !== area) nav(g);
     }
   };
@@ -982,38 +993,71 @@ class World {
     this.box(8, 0.06, 0.06, rail, 0, 0.55, -4.9, g);
     for (let x = -4; x <= 4; x += 1) this.cyl(0.03, 0.03, 1.05, rail, x, 0.525, -4.9, g, 8);
 
-    // LEDスクリーン：COMING SOON
+    // LEDスクリーン：おすすめの曲（サムネと曲名）。曲は index.html の .song から setSong で渡す
     const screenCanvas = document.createElement('canvas');
     screenCanvas.width = 1024; screenCanvas.height = 420;
     const sg = screenCanvas.getContext('2d');
     const screenTex = new THREE.CanvasTexture(screenCanvas);
     screenTex.colorSpace = THREE.SRGBColorSpace;
-    const drawScreen = (t) => {
+    const wrap = (text, maxW, maxLines) => {
+      const out = []; let line = '';
+      for (const ch of text) {
+        if (sg.measureText(line + ch).width > maxW && line) { out.push(line); line = ''; if (out.length === maxLines) break; }
+        line += ch;
+      }
+      if (out.length < maxLines && line) out.push(line);
+      else if (line) out[maxLines - 1] = out[maxLines - 1].slice(0, -1) + '…';
+      return out;
+    };
+    const drawScreen = (song, img) => {
       const W = 1024, H = 420;
       const grd = sg.createLinearGradient(0, 0, W, H);
-      const hue = (t * 20) % 360;
-      grd.addColorStop(0, `hsl(${hue}, 70%, 18%)`);
-      grd.addColorStop(1, `hsl(${(hue + 120) % 360}, 70%, 14%)`);
+      grd.addColorStop(0, '#2a0f3a'); grd.addColorStop(1, '#0d2440');
       sg.fillStyle = grd; sg.fillRect(0, 0, W, H);
-      sg.textAlign = 'center'; sg.textBaseline = 'middle';
-      sg.shadowColor = '#ffd36b'; sg.shadowBlur = 24;
-      sg.fillStyle = '#fff3c4';
-      sg.font = `130px ${FONT_DISPLAY}`;
-      sg.fillText('COMING SOON', W / 2, H * 0.42);
+      sg.textBaseline = 'middle'; sg.textAlign = 'left';
+      // サムネ（hqdefault は上下に黒帯があるので 16:9 に切り抜く）
+      const tx = 40, ty = 60, tw = 533, th = 300;
+      sg.fillStyle = '#000'; sg.fillRect(tx, ty, tw, th);
+      if (img) sg.drawImage(img, 0, img.height * 0.125, img.width, img.height * 0.75, tx, ty, tw, th);
+      // 再生マーク
+      sg.fillStyle = 'rgba(255,0,0,0.92)';
+      sg.beginPath(); sg.roundRect(tx + tw / 2 - 52, ty + th / 2 - 36, 104, 72, 18); sg.fill();
+      sg.fillStyle = '#fff';
+      sg.beginPath(); sg.moveTo(tx + tw / 2 - 14, ty + th / 2 - 20); sg.lineTo(tx + tw / 2 + 22, ty + th / 2); sg.lineTo(tx + tw / 2 - 14, ty + th / 2 + 20); sg.fill();
+      // 文字
+      const x = 610, maxW = W - x - 30;
+      sg.shadowColor = '#ff8fb8'; sg.shadowBlur = 18;
+      sg.fillStyle = '#ffb3d0'; sg.font = `40px ${FONT_DISPLAY}`;
+      sg.fillText('おすすめの曲', x, 88);
       sg.shadowBlur = 0;
-      sg.font = `700 44px ${FONT_BODY}`;
-      sg.fillStyle = '#c6ef6e';
-      sg.fillText('今後なにかが始まります。おたのしみに', W / 2, H * 0.74);
+      if (song) {
+        sg.fillStyle = '#fff3c4'; sg.font = `700 46px ${FONT_BODY}`;
+        wrap(song.title, maxW, 3).forEach((l, k) => sg.fillText(l, x, 170 + k * 58));
+        sg.fillStyle = '#c6ef6e'; sg.font = `700 34px ${FONT_BODY}`;
+        sg.fillText(wrap(song.artist, maxW, 1)[0] || '', x, 360);
+      }
       // LEDのドット
       sg.fillStyle = 'rgba(0,0,0,0.28)';
       for (let y = 0; y < H; y += 6) sg.fillRect(0, y, W, 2);
-      for (let x = 0; x < W; x += 6) sg.fillRect(x, 0, 2, H);
+      for (let x2 = 0; x2 < W; x2 += 6) sg.fillRect(x2, 0, 2, H);
       screenTex.needsUpdate = true;
     };
-    drawScreen(0);
+    this.setSong = async song => {
+      this.songUrl = song.url;
+      // 曲名の字をフォントで描けるよう、先に読み込む
+      try { await Promise.all([document.fonts.load(`40px ${FONT_DISPLAY}`, 'おすすめの曲'), document.fonts.load(`700 46px ${FONT_BODY}`, song.title + song.artist)]); } catch (e) { /* 読めなくても描く */ }
+      drawScreen(song, null);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => drawScreen(song, img);
+      img.src = `https://i.ytimg.com/vi/${song.id}/hqdefault.jpg`;
+    };
+    drawScreen(null, null);
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 2.62), new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false }));
     screen.position.set(0, 2.45, -8.85);
     g.add(screen);
+    // ステージにいるときにスクリーンを押すと YouTube へ
+    this.hotspot('song', [6.4, 2.62, 0.3, 0, 2.45, -8.7]);
     this.box(6.6, 2.82, 0.08, this.mat('#08080b'), 0, 2.45, -8.92, g);
     // 文字は描き直さず（毎回の転送が重い）、色味だけゆっくり変える
     const tintA = new THREE.Color('#ffffff'), tintB = new THREE.Color('#b9c8ff');
