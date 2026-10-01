@@ -177,10 +177,11 @@
   .song-more { margin: 0; font-size: 13px; }
   .song-more a { color: var(--muted); }
 
-  /* 入場（ドリンク代） */
+  /* 入場（ドリンクチケット） */
   .entry { display: grid; gap: 8px; padding: 14px; border-radius: 14px; background: rgba(255, 211, 107, 0.08); border: 1px dashed rgba(255, 211, 107, 0.55); }
   .entry-title { margin: 0; font-weight: 700; }
-  .entry-title b { font-family: var(--display); font-weight: 400; font-size: 20px; color: #ffd36b; margin-left: 4px; }
+  .entry-title b { font-family: var(--display); font-weight: 400; font-size: 20px; color: #ffd36b; margin-left: 6px; display: inline-flex; align-items: center; gap: 3px; }
+  .ebi-mark { width: 27px; height: 22px; color: #ff7a57; }
   .entry-note { margin: 0; color: var(--muted); font-size: 12px; }
   .pay { justify-self: start; display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 15px; letter-spacing: 0.04em; color: #2a1a00; background: #ffd36b; border: 0; border-radius: 999px; padding: 9px 20px; cursor: pointer; box-shadow: 0 4px 0 #c99a2e; }
   .pay:active { transform: translateY(3px); box-shadow: 0 1px 0 #c99a2e; }
@@ -273,9 +274,9 @@
     </div>
     <div class="entry only3d" aria-live="polite">
       <div class="entry-locked">
-        <p class="entry-title">入場には 1ドリンク代<b>¥700</b></p>
-        <p class="entry-note">本物のお金はかかりません。ボタンを押すだけで払えます。</p>
-        <button class="pay" id="pay" type="button"><span class="coin" aria-hidden="true"></span>¥700 を払って入場する</button>
+        <p class="entry-title">入場には 1ドリンク<b><svg class="ebi-mark" viewBox="0 0 27 22" aria-hidden="true"><path d="M19 3.6C11 1.6 3 6 4.4 12.6c.8 3.6 3.4 5.2 5.8 5.4l.5-3.6c-2-.4-2.9-1.8-2.7-3.4.4-3.4 5-5 10.2-3.2z" fill="currentColor"/><path d="M10.4 15.6 6.2 19.6l3.4.2 2.4-.6z" fill="currentColor"/><circle cx="18.6" cy="6" r="3.3" fill="currentColor"/><path d="M20.5 3.6c1.6-1.8 3.4-2.6 5-2.4M21.2 5c2-.8 3.6-.6 4.6.2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M6.6 8.6l3 1.6M5.2 12.4l3.4.2M6.4 15.6l2.8-1.4" stroke="#ffd2bd" stroke-width="1" stroke-linecap="round"/><circle cx="19.6" cy="5.2" r="1.1" fill="#2a0d05"/></svg>700</b></p>
+        <p class="entry-note">えびマークは架空の単位です。ボタンを押すだけで受け取れます。</p>
+        <button class="pay" id="pay" type="button"><span class="coin" aria-hidden="true"></span>ドリンクチケットを受け取る！</button>
       </div>
       <div class="entry-open">
         <p class="entry-title">🎫 ドリンクチケットを受け取りました</p>
@@ -395,7 +396,7 @@
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100216';
+  const ASSET_VERSION = '2026100218';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();

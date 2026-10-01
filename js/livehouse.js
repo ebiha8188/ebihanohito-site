@@ -121,10 +121,11 @@ export async function start() {
   const look = { yaw: 0, pitch: 0, yawTo: 0, pitchTo: 0 }; // ドラッグで見回す量
   const offset = { x: 0, y: 0, xTo: 0, yTo: 0 };         // パネルを避ける画面ずらし
   let diving = false;
-  // 入場：受付でドリンク代を払うまで、バーカンとステージには入れない（このタブの間は覚えておく）
-  const ENTRY_KEY = 'ebiha-entry';
+  // 入場：受付でドリンクチケットを受け取るまで、バーカンとステージには入れない。
+  // ページを開きなおすたびに受付から。ただし水槽からゲームへ行って戻ってきたときだけは入場済みのまま
+  const RETURN_KEY = 'ebiha-return';
   let entered = false;
-  try { entered = sessionStorage.getItem(ENTRY_KEY) === '1'; } catch (e) { /* 保存できなくても動く */ }
+  try { entered = sessionStorage.getItem(RETURN_KEY) === '1'; sessionStorage.removeItem(RETURN_KEY); } catch (e) { /* 保存できなくても動く */ }
   let pending = null; // 払う前に行こうとした場所。払ったらそこへ
   const LOCKED = new Set(['bar', 'stage', 'dive']);
 
@@ -218,6 +219,7 @@ export async function start() {
 
   function dive() {
     if (diving) return;
+    try { sessionStorage.setItem(RETURN_KEY, '1'); } catch (e) { /* なくても遊べる */ }
     if (reduceMotion) { location.href = 'ebi-dive/'; return; }
     diving = true;
     ui.root.classList.add('diving');
@@ -259,15 +261,14 @@ export async function start() {
   }
   function denyEntry() {
     if (area !== 'reception') go('reception');
-    say('先にドリンク代をお願いします〜！');
-    toast('受付でドリンク代を払うと、中に入れます');
+    say('先にドリンクチケットをどうぞ〜！');
+    toast('受付でドリンクチケットを受け取ると、中に入れます');
     ui.pay.classList.remove('pulse'); void ui.pay.offsetWidth; ui.pay.classList.add('pulse');
   }
   function say(text) { ui.speech.querySelector('span').textContent = text; }
   function pay() {
     if (entered) return;
     entered = true;
-    try { sessionStorage.setItem(ENTRY_KEY, '1'); } catch (e) { /* 保存できなくても入れる */ }
     ui.pay.disabled = true;
     say('まいど！ドリンクチケットどうぞ');
     // コインは画面の少し手前・下から投げる
@@ -280,7 +281,7 @@ export async function start() {
     });
   }
   ui.pay.addEventListener('click', pay);
-  say(entered ? 'いってらっしゃい〜！' : 'いらっしゃいませ！ドリンク代 700円です');
+  say(entered ? 'いってらっしゃい〜！' : 'いらっしゃいませ！1ドリンク制です');
 
   ui.navBtns.forEach(b => b.addEventListener('click', e => {
     e.preventDefault();
@@ -716,12 +717,20 @@ class World {
     stand.rotation.x = -0.25;
     // お金を置くトレイ
     this.cyl(0.15, 0.12, 0.025, this.mat('#2a2a30'), 0.62, 1.145, 0.2, g, 18);
-    const ticket = textPlane(['1 DRINK', '¥700'], { w: 256, h: 180, bg: '#f5f1e8', color: '#7a2f24', font: `52px ${FONT_DISPLAY}`, line: 64 }, 0.44, 0.31);
+    // 料金は「えびマーク」の架空の単位で（本物のお金っぽく見せない）
+    const ticketTex = canvasTex(256, 180, (c, w, h) => {
+      c.fillStyle = '#f5f1e8'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#7a2f24'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.font = `52px ${FONT_DISPLAY}`; c.fillText('1 DRINK', w / 2, 52);
+      c.save(); c.translate(34, 100); c.scale(2.5, 2.5); drawShrimpMark(c, '#e2502c'); c.restore();
+      c.textAlign = 'left'; c.fillText('700', 104, 128);
+    });
+    const ticket = new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.31), M({ map: ticketTex, emissive: '#ffffff', emissiveMap: ticketTex, emissiveIntensity: 0.18 }));
     ticket.position.set(0.1, 1.32, -0.12); ticket.rotation.x = -0.25;
     g.add(ticket);
 
     // 受付のえび（えびは：緑のえび＋真珠のネックレス）
-    const ebiha = makeShrimp({ body: '#5fbf6a', belly: '#bde8a6', pearls: true });
+    const ebiha = makeShrimp({ body: '#5fbf6a', belly: '#bde8a6', pearls: true, glam: true });
     ebiha.position.set(-0.8, 0.35, -0.9);
     ebiha.scale.setScalar(1.05);
     g.add(ebiha);
@@ -1191,7 +1200,7 @@ class World {
 }
 
 // ---------- えび（立ち姿のマスコット） ----------
-function makeShrimp({ body = '#ff7a57', belly = '#ffc2a8', pearls = false, bowtie = false } = {}) {
+function makeShrimp({ body = '#ff7a57', belly = '#ffc2a8', pearls = false, bowtie = false, glam = false } = {}) {
   const g = new THREE.Group();
   const shell = M({ color: body, roughness: 0.45, metalness: 0.05 });
   const soft = M({ color: belly, roughness: 0.6 });
@@ -1266,6 +1275,25 @@ function makeShrimp({ body = '#ff7a57', belly = '#ffc2a8', pearls = false, bowti
       g.add(p);
     }
   }
+  if (glam) {
+    // まつげ：目の上に3本ずつ、外へ開く
+    const lash = M({ color: '#141014' });
+    [-0.13, 0.13].forEach(x => {
+      const ex = x * 1.4;
+      [-1, 0, 1].forEach(k => {
+        const a = k * 0.55 + (x > 0 ? -0.15 : 0.15);
+        const l = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.012, 0.1, 5), lash);
+        l.position.set(ex + Math.sin(a) * 0.085, 1.64 + Math.cos(a) * 0.085 + 0.02, 0.15);
+        l.rotation.z = -a;
+        g.add(l);
+      });
+    });
+    // 口紅：顔の前に赤い唇とつや
+    const lip = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), M({ color: '#e8304f', emissive: '#e8304f', emissiveIntensity: 0.25 }));
+    lip.scale.set(0.085, 0.045, 0.035); lip.position.set(0, 1.07, 0.335); g.add(lip);
+    const gloss = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), M({ color: '#ff9fb2', emissive: '#ff9fb2', emissiveIntensity: 0.4 }));
+    gloss.scale.set(0.03, 0.012, 0.01); gloss.position.set(0.02, 1.083, 0.366); g.add(gloss);
+  }
   if (bowtie) {
     const bm = M({ color: '#111', roughness: 0.4 });
     [-1, 1].forEach(sd => {
@@ -1325,6 +1353,18 @@ function neonPlane(text, color, pw, ph, size) {
   });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }));
   return m;
+}
+
+// えびマーク（架空の通貨単位）。27×22 の座標で描く。index.html の .ebi-mark と同じ形
+function drawShrimpMark(c, color) {
+  c.fillStyle = color;
+  c.fill(new Path2D('M19 3.6C11 1.6 3 6 4.4 12.6c.8 3.6 3.4 5.2 5.8 5.4l.5-3.6c-2-.4-2.9-1.8-2.7-3.4.4-3.4 5-5 10.2-3.2z'));
+  c.fill(new Path2D('M10.4 15.6 6.2 19.6l3.4.2 2.4-.6z'));
+  c.beginPath(); c.arc(18.6, 6, 3.3, 0, Math.PI * 2); c.fill();
+  c.lineCap = 'round';
+  c.strokeStyle = color; c.lineWidth = 1.2; c.stroke(new Path2D('M20.5 3.6c1.6-1.8 3.4-2.6 5-2.4M21.2 5c2-.8 3.6-.6 4.6.2'));
+  c.strokeStyle = '#ffd2bd'; c.lineWidth = 1; c.stroke(new Path2D('M6.6 8.6l3 1.6M5.2 12.4l3.4.2M6.4 15.6l2.8-1.4'));
+  c.fillStyle = '#2a0d05'; c.beginPath(); c.arc(19.6, 5.2, 1.1, 0, Math.PI * 2); c.fill();
 }
 
 const glowCache = {};
