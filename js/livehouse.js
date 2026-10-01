@@ -6,7 +6,7 @@ const FONT_DISPLAY = '"Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-seri
 const FONT_BODY = '"Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // 照明の演出（色の変化・ライトの首振り・ミラーボールの光・ネオンのまたたき）。false で全部止まる
-const FX = { light: false };
+const FX = { light: true };
 
 // 軽量化：光の計算が安い Lambert に統一し、同じ見た目のマテリアルは1つを使い回す
 const matCache = new Map();
@@ -419,7 +419,7 @@ function debugPanel({ renderer, scene, world, dbg, setDpr, getDpr }) {
     } else if (o.userData.orig) { o.material = o.userData.orig; delete o.userData.orig; }
   });
   const items = [
-    ['light', '照明の演出（色・首振り・ミラーボール・ネオン）', false, on => { FX.light = on; }],
+    ['light', '照明の演出（色・首振り・ミラーボール・ネオン）', true, on => { FX.light = on; }],
     ['anim', 'えび・泡などの動き', true, on => { dbg.freeze = !on; }],
     ['render', '3Dの描画（オフ＝最後の1枚で静止）', true, on => { dbg.noRender = !on; }],
     ['dots', '床の光の粒', true, vis([d.dots])],
