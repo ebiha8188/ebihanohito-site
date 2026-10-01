@@ -5,6 +5,8 @@ import * as THREE from '../vendor/three.module.min.js';
 const FONT_DISPLAY = '"Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif';
 const FONT_BODY = '"Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// 照明の演出（色の変化・ライトの首振り・ミラーボールの光・ネオンのまたたき）。false で全部止まる
+const LIGHT_FX = false;
 
 // 軽量化：光の計算が安い Lambert に統一し、同じ見た目のマテリアルは1つを使い回す
 const matCache = new Map();
@@ -463,7 +465,8 @@ class World {
     // ステージは1灯で色を回す
     const stage = new THREE.PointLight('#ff5fa8', 26, 13, 1.4); stage.position.set(0, 3.6, -5.6); s.add(stage);
     const pink = new THREE.Color('#ff5fa8'), blue = new THREE.Color('#5f8bff');
-    this.anim.push(t => { stage.color.lerpColors(pink, blue, Math.sin(t * 0.9) * 0.5 + 0.5); });
+    if (LIGHT_FX) this.anim.push(t => { stage.color.lerpColors(pink, blue, Math.sin(t * 0.9) * 0.5 + 0.5); });
+    else stage.color.lerpColors(pink, blue, 0.5);
   }
 
   // ---------- 台座・床・壁 ----------
@@ -575,7 +578,8 @@ class World {
     const sub = neonPlane('LIVE HOUSE', '#7ef0ff', 2.2, 0.4);
     sub.position.set(4.3, 1.75, 3.34);
     this.scene.add(sub);
-    this.anim.push(t => { neon.material.opacity = 0.88 + Math.sin(t * 9) * 0.04 + (Math.sin(t * 0.9) > 0.97 ? -0.4 : 0); });
+    neon.material.opacity = 0.9;
+    if (LIGHT_FX) this.anim.push(t => { neon.material.opacity = 0.88 + Math.sin(t * 9) * 0.04 + (Math.sin(t * 0.9) > 0.97 ? -0.4 : 0); });
 
     // 仕切りのポスター（えびダイブ食堂のサムネ）
     loader.load('ebi-dive/thumbnail.png', tex => {
@@ -741,7 +745,7 @@ class World {
         b.position.set(b.userData.x + Math.sin(t * 3 + b.userData.o * 9) * 0.02, y0 + 0.1 + u * (h - 0.25), b.userData.z);
       }
       weeds.forEach((s, i) => { s.rotation.x = Math.sin(t * 1.4 + i) * 0.12; });
-      halo.material.opacity = 0.5 + Math.sin(t * 2) * 0.1;
+      if (LIGHT_FX) halo.material.opacity = 0.5 + Math.sin(t * 2) * 0.1;
     });
     this.hotspot('dive', [1.1, 2.3, 1.6, -6.2, 1.15, 2.45]);
   }
@@ -797,7 +801,7 @@ class World {
     this.box(6.6, 2.82, 0.08, this.mat('#08080b'), 0, 2.45, -8.92, g);
     // 文字は描き直さず（毎回の転送が重い）、色味だけゆっくり変える
     const tintA = new THREE.Color('#ffffff'), tintB = new THREE.Color('#b9c8ff');
-    this.anim.push(t => { screen.material.color.lerpColors(tintA, tintB, Math.sin(t * 0.8) * 0.5 + 0.5); });
+    if (LIGHT_FX) this.anim.push(t => { screen.material.color.lerpColors(tintA, tintB, Math.sin(t * 0.8) * 0.5 + 0.5); });
 
     // スピーカー
     const spk = this.mat('#15151a', { roughness: 0.7 });
@@ -874,13 +878,15 @@ class World {
       beam.position.set(x, 3.4, -6.0); beam.userData.keep = true;
       g.add(beam); beams.push(beam);
     });
-    this.anim.push(t => {
+    const moveBeams = t => {
       beams.forEach((b, i) => {
         b.rotation.z = Math.sin(t * 0.8 + i * 1.1) * 0.45;
         b.rotation.x = 0.25 + Math.cos(t * 0.6 + i) * 0.2;
         b.material.opacity = 0.1 + (Math.sin(t * 2 + i) * 0.5 + 0.5) * 0.08;
       });
-    });
+    };
+    moveBeams(0);
+    if (LIGHT_FX) this.anim.push(moveBeams);
 
     // ミラーボール
     this.cyl(0.01, 0.01, 0.5, this.mat('#888'), -3.0, 3.85, -2.6, this.scene, 4);
@@ -905,7 +911,7 @@ class World {
     const dots = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
     dots.position.set(0, 0, -2.2); dots.userData.keep = true;
     this.scene.add(dots);
-    this.anim.push((t, dt) => { ball.rotation.y += dt * 0.6; dots.rotation.y += dt * 0.25; });
+    if (LIGHT_FX) this.anim.push((t, dt) => { ball.rotation.y += dt * 0.6; dots.rotation.y += dt * 0.25; });
 
     this.hotspot('stage', [12, 4, 4, 0, 2, -7.1]);
   }
