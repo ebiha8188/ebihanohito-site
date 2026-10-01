@@ -56,6 +56,8 @@
   body { color: var(--ink); font-family: var(--body); font-weight: 500; font-size: 15px; line-height: 1.7; }
   .wrap { max-width: 880px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 56px; display: grid; gap: 20px; }
   header { display: grid; gap: 6px; }
+  .back-house { justify-self: start; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px; padding: 5px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(8,30,40,0.72); color: var(--ink); font-size: 13px; font-weight: 700; text-decoration: none; }
+  .back-house:hover { background: rgba(16,49,60,0.95); }
   .eyebrow { margin: 0; color: var(--plankton); font-size: 13px; letter-spacing: 0.12em; }
   h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 48px); line-height: 1.15; letter-spacing: 0.02em; text-wrap: balance; }
   h1 span { color: var(--shrimp); }
@@ -395,6 +397,7 @@
 
 <main class="wrap">
   <header>
+    <a class="back-house" href="/#bar">← ライブハウスに戻る</a>
     <p class="eyebrow">海で育てて、厨房へ。</p>
     <h1>えびダイブ<span>食堂</span></h1>
     <p class="lede">えびを操って60秒間、プランクトンをたくさん食べよう。大きく育ったえびほど、豪華な料理になって出てくる。釣り針と魚には気をつけて。</p>

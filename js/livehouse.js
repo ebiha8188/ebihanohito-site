@@ -1073,50 +1073,11 @@ class World {
         c.rotation.x = Math.PI / 2; c.position.set(x, y, -5.94); g.add(c);
       });
     });
-    // アンプ
-    [[-3.2, '#1a1a1f'], [3.2, '#1a1a1f']].forEach(([x, c]) => {
-      this.box(1.1, 0.9, 0.55, this.mat(c), x, sH + 0.45, -8.3, g);
-      this.box(1.02, 0.5, 0.02, this.mat('#2d2a24', { roughness: 1 }), x, sH + 0.38, -8.01, g);
-      this.box(1.02, 0.1, 0.02, this.mat('#b8b2a2', { metalness: 0.6 }), x, sH + 0.78, -8.01, g);
-    });
-    // ドラムセット
-    const shell = this.mat('#c0392b', { roughness: 0.35, metalness: 0.2 });
-    const head = this.mat('#f2efe6', { roughness: 0.6 });
-    const brass = this.mat('#d4a73a', { metalness: 0.9, roughness: 0.3 });
-    const kick = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.4, 18), shell);
-    kick.rotation.x = Math.PI / 2; kick.position.set(0, sH + 0.42, -7.7); g.add(kick);
-    const kickHead = new THREE.Mesh(new THREE.CircleGeometry(0.4, 28), head);
-    kickHead.position.set(0, sH + 0.42, -7.49); g.add(kickHead);
-    const kickLogo = textPlane(['EBI'], { w: 256, h: 256, bg: 'rgba(0,0,0,0)', color: '#c0392b', font: `100px ${FONT_DISPLAY}` }, 0.42, 0.42);
-    kickLogo.position.set(0, sH + 0.42, -7.48); g.add(kickLogo);
-    [[-0.35, 1.0, -7.6], [0.35, 1.0, -7.6], [0.8, 0.55, -7.3]].forEach(([x, y, z], i) => {
-      this.cyl(i === 2 ? 0.26 : 0.18, i === 2 ? 0.26 : 0.18, i === 2 ? 0.35 : 0.2, shell, x, sH + y - 0.2 + (i === 2 ? -0.05 : 0.2), z, g, 20);
-    });
-    [[-0.95, 1.55, -7.4], [1.0, 1.65, -7.9], [-0.7, 1.15, -7.2]].forEach(([x, y, z]) => {
-      this.cyl(0.012, 0.012, y, this.mat('#9aa3ad', { metalness: 0.8 }), x, sH + y / 2, z, g, 6);
-      const cym = this.cyl(0.32, 0.32, 0.01, brass, x, sH + y, z, g, 24);
-      cym.rotation.z = 0.12;
-    });
-    this.cyl(0.18, 0.18, 0.08, this.mat('#222'), 0, sH + 0.55, -8.35, g, 16);
-    // マイクスタンド
-    const metal = this.mat('#9aa3ad', { metalness: 0.85, roughness: 0.3 });
-    this.cyl(0.015, 0.015, 1.5, metal, 0, sH + 0.75, -6.1, g, 8);
-    this.cyl(0.2, 0.2, 0.02, metal, 0, sH + 0.01, -6.1, g, 16);
-    const mic = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), this.mat('#3a3a40', { metalness: 0.6, roughness: 0.4 }));
-    mic.position.set(0, sH + 1.55, -6.05); g.add(mic);
     // モニタースピーカー
     [-1.6, 1.6].forEach(x => {
       const m = this.box(0.7, 0.32, 0.45, spk, x, sH + 0.16, -5.85, g);
       m.rotation.x = -0.35;
     });
-    // ギタースタンドとギター（ひとつ）
-    const guitar = new THREE.Group();
-    const gb = new THREE.Mesh(new THREE.SphereGeometry(0.2, 11, 7), this.mat('#2b6cb0', { roughness: 0.3, metalness: 0.2 }));
-    gb.scale.set(1, 1.3, 0.3); guitar.add(gb);
-    const neck = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.75, 0.03), this.mat('#6b4423'));
-    neck.position.y = 0.55; guitar.add(neck);
-    guitar.position.set(-2.3, sH + 0.35, -7.5); guitar.rotation.z = 0.15;
-    g.add(guitar);
 
     // トラスと照明
     const truss = this.mat('#b8bec6', { metalness: 0.8, roughness: 0.3 });
