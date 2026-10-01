@@ -683,7 +683,6 @@ class World {
     this.scene.add(g);
     // カウンター
     const front = this.mat('#7a2f24', { emissive: '#ff7a57', emissiveIntensity: 0, unique: true });
-    this.addHover('reception', front, 0, 0.25);
     this.box(3.6, 1.05, 0.7, front, 0, 0.525, 0, g);
     const top = this.mat('#d8c39c', { roughness: 0.35 });
     this.box(3.8, 0.08, 0.86, top, 0, 1.09, 0, g);
@@ -840,7 +839,6 @@ class World {
     this.scene.add(g);
     // カウンター（壁と平行、客席側が +x）
     const body = this.mat('#2a1712', { emissive: '#ffb36b', emissiveIntensity: 0, unique: true });
-    this.addHover('bar', body, 0, 0.18);
     this.box(0.62, 1.08, 5.0, body, -5.6, 0.54, -1.1, g);
     const top = this.mat('#b07a45', { roughness: 0.3, metalness: 0.1 });
     this.box(0.86, 0.08, 5.2, top, -5.62, 1.12, -1.1, g);
