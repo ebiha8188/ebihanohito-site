@@ -91,7 +91,7 @@ export async function start() {
   scene.background = new THREE.Color('#061820');
   scene.fog = new THREE.Fog('#061820', 30, 70);
 
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 200);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
 
   const world = new World(scene);
   const loader = new THREE.TextureLoader();
@@ -473,7 +473,7 @@ class World {
     const wood = this.mat('#5a3b28', { roughness: 0.7 });
     this.box(18.6, 0.7, 19.6, wood, 0, -0.36, -0.6);
     const trim = this.mat('#c99a5b', { roughness: 0.5, metalness: 0.2 });
-    this.box(18.8, 0.08, 19.8, trim, 0, -0.02, -0.6);
+    this.box(18.8, 0.08, 19.8, trim, 0, -0.07, -0.6); // 上面は床より下（同じ高さだと床がちらつく）
     // 台座の名札
     const plate = textPlane(['えびは LIVE HOUSE'], { w: 1024, h: 160, bg: '#c99a5b', color: '#3a2414', font: `64px ${FONT_DISPLAY}`, pad: 0 }, 3.6, 0.56);
     plate.position.set(4.2, -0.36, 8.71);
@@ -488,8 +488,8 @@ class World {
       for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { g.fillStyle = (i + j) % 2 ? '#e9e0cf' : '#2a2422'; g.fillRect(i * w / n, j * h / n, w / n, h / n); }
     });
     checker.wrapS = checker.wrapT = THREE.RepeatWrapping; checker.repeat.set(4, 1.5);
-    const lobby = new THREE.Mesh(new THREE.PlaneGeometry(16, 5.6), this.mat('#ffffff', { map: checker, roughness: 0.6 }));
-    lobby.rotation.x = -Math.PI / 2; lobby.position.set(0, 0.021, 5.95);
+    const lobby = new THREE.Mesh(new THREE.PlaneGeometry(16, 5.55), this.mat('#ffffff', { map: checker, roughness: 0.6 }));
+    lobby.rotation.x = -Math.PI / 2; lobby.position.set(0, 0.02, 5.975);
     s.add(lobby);
 
     // 壁：奥と左だけ高く、手前と右は低い縁（ドールハウスの切り口）
