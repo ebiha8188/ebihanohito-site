@@ -84,7 +84,7 @@ export async function start() {
   try {
     await Promise.race([
       Promise.all([
-        document.fonts.load(`80px ${FONT_DISPLAY}`, 'えびはLIVEHOUSEBARMENU受付RECEPTIONCOMINGSOONダイブ食堂作品一覧ENTRANCE今後なにかが始まりますおたのしみに水槽→STAGEFLOOR0123456789'),
+        document.fonts.load(`80px ${FONT_DISPLAY}`, 'えびはLIVEHOUSEBARMENU受付RECEPTIONCOMINGSOONダイブ食堂作品一覧ENTRANCE今後なにかが始まりますおたのしみに水槽→STAGEFLOOR0123456789DRINKTICKETFREEGALLERYEBI'),
         document.fonts.load(`700 40px ${FONT_BODY}`, 'えびダイブ食堂作品一覧水槽をのぞくとゲームの世界へ本日のおすすめランキング料理ドリンクビールレモンサワー受付はこちら'),
       ]),
       new Promise(r => setTimeout(r, 2500)),
@@ -721,12 +721,15 @@ class World {
     // お金を置くトレイ
     this.cyl(0.15, 0.12, 0.025, this.mat('#2a2a30'), 0.62, 1.145, 0.2, g, 18);
     // 料金は「えびマーク」の架空の単位で（本物のお金っぽく見せない）
-    const ticketTex = canvasTex(256, 180, (c, w, h) => {
+    const ticketTex = canvasTex(512, 360, (c, w, h) => {
       c.fillStyle = '#f5f1e8'; c.fillRect(0, 0, w, h);
-      c.fillStyle = '#7a2f24'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.font = `52px ${FONT_DISPLAY}`; c.fillText('1 DRINK', w / 2, 52);
-      c.save(); c.translate(34, 100); c.scale(2.5, 2.5); drawShrimpMark(c, '#e2502c'); c.restore();
-      c.textAlign = 'left'; c.fillText('700', 104, 128);
+      c.fillStyle = '#7a2f24'; c.textBaseline = 'middle';
+      // 上下左右に余白をとって、2行とも中央にそろえる
+      c.textAlign = 'center'; c.font = `68px ${FONT_DISPLAY}`; c.fillText('1 DRINK', w / 2, 122);
+      c.font = `78px ${FONT_DISPLAY}`;
+      const mw = 27 * 3, gap = 14, tw = c.measureText('700').width, x0 = (w - (mw + gap + tw)) / 2;
+      c.save(); c.translate(x0, 214); c.scale(3, 3); drawShrimpMark(c, '#e2502c'); c.restore();
+      c.textAlign = 'left'; c.fillText('700', x0 + mw + gap, 248);
     });
     const ticket = new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.31), M({ map: ticketTex, emissive: '#ffffff', emissiveMap: ticketTex, emissiveIntensity: 0.18 }));
     ticket.position.set(0.1, 1.32, -0.12); ticket.rotation.x = -0.25;
