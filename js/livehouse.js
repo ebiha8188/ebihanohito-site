@@ -989,9 +989,15 @@ class World {
       s.userData.keep = true; g.add(s); weeds.push(s);
     }
     // 中のえび
+    // 立ち姿のモデルを横に寝かせ、頭が進む向き（swim の +z）、顔が上を向くようにする。
+    // 体の真ん中（モデルの高さ1.0あたり）を swim の原点に合わせて、どの向きでもはみ出さないように
     const shrimp = makeShrimp({ body: '#ff7a57', belly: '#ffc2a8' });
-    shrimp.scale.setScalar(0.22);
-    g.add(shrimp);
+    shrimp.rotation.set(-Math.PI / 2, 0, Math.PI);
+    shrimp.position.z = -1.0;
+    const swim = new THREE.Group();
+    swim.scale.setScalar(0.16);
+    swim.add(shrimp);
+    g.add(swim);
     // 泡
     const bubbleM = new THREE.MeshBasicMaterial({ color: '#e8fbff', transparent: true, opacity: 0.7 });
     const bubbles = [];
@@ -1010,9 +1016,10 @@ class World {
     g.add(tag);
 
     this.anim.push((t) => {
-      const a = t * 0.9;
-      shrimp.position.set(Math.sin(a * 0.7) * 0.12, y0 + 0.55 + Math.sin(a * 1.6) * 0.15, Math.cos(a) * 0.42);
-      shrimp.rotation.set(0, Math.atan2(-Math.sin(a), 0) > 0 ? 0 : Math.PI, Math.PI / 2 - 0.2);
+      // 水槽の内側（x ±0.39, z ±0.68）から体の長さぶん内側の楕円をぐるぐる泳ぐ
+      const a = t * 0.6, rx = 0.17, rz = 0.44;
+      swim.position.set(Math.sin(a) * rx, y0 + 0.55 + Math.sin(t * 1.3) * 0.1, Math.cos(a) * rz);
+      swim.rotation.set(Math.cos(t * 1.3) * 0.15, Math.atan2(Math.cos(a) * rx, -Math.sin(a) * rz), 0);
       shrimp.userData.wave(t * 3);
       for (const b of bubbles) {
         const u = (t * b.userData.s + b.userData.o) % 1;
