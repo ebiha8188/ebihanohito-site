@@ -989,10 +989,10 @@ class World {
       s.userData.keep = true; g.add(s); weeds.push(s);
     }
     // 中のえび
-    // 立ち姿のモデルを横に寝かせ、頭が進む向き（swim の +z）、顔が上を向くようにする。
+    // 立ち姿のモデルを横に寝かせ、頭が進む向き（swim の +z）、背中が上・腹が下になるようにする。
     // 体の真ん中（モデルの高さ1.0あたり）を swim の原点に合わせて、どの向きでもはみ出さないように
     const shrimp = makeShrimp({ body: '#ff7a57', belly: '#ffc2a8' });
-    shrimp.rotation.set(-Math.PI / 2, 0, Math.PI);
+    shrimp.rotation.set(Math.PI / 2, 0, 0);
     shrimp.position.z = -1.0;
     const swim = new THREE.Group();
     swim.scale.setScalar(0.16);
