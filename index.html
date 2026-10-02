@@ -143,6 +143,12 @@
   .marker.fish .m-label { color: #7ef0ff; }
   @keyframes bob { 50% { margin-top: -5px; } }
   .marker.off { opacity: 0; pointer-events: none; }
+  /* 画面の外にある場所は、端に矢印つきで出す */
+  .marker .m-arrow { display: none; }
+  .marker.edge { translate: -50% -100%; grid-template-columns: auto auto; column-gap: 8px; align-items: center; padding: 6px 12px; border-color: rgba(255, 211, 107, 0.7); }
+  .marker.edge::after { display: none; }
+  .marker.edge .m-arrow { display: block; grid-row: span 2; width: 0; height: 0; border-style: solid; border-width: 7px 0 7px 12px; border-color: transparent transparent transparent #ffd36b; rotate: var(--a, 0rad); }
+  .marker.edge .m-label, .marker.edge .m-sub { justify-self: start; }
   .diving #markers, .diving .panels, .diving #hint { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 
   #hint { position: fixed; z-index: 4; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); font-size: 12px; color: var(--muted); background: var(--glass); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; transition: opacity 0.6s; pointer-events: none; }
@@ -400,7 +406,7 @@
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100224';
+  const ASSET_VERSION = '2026100227';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();

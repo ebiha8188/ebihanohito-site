@@ -170,10 +170,15 @@ export async function start() {
   }
 
   function isMobileLayout() { return W < 760; }
+  const free = { l: 0, t: 0, r: 1, b: 1 }; // 目印を置ける画面の範囲（上のメニューとパネルを除く）
   function updateOffsetTarget() {
     const panel = ui.panels.find(p => p.dataset.area === area && !p.hidden);
+    const pr = panel && !panel.hidden ? panel.getBoundingClientRect() : null;
+    const top = document.querySelector('.topbar').getBoundingClientRect().bottom;
+    free.l = 12; free.t = top + 8; free.r = W - 12; free.b = H - 12;
+    if (pr && pr.width) { if (isMobileLayout()) free.b = Math.min(free.b, pr.top - 8); else free.r = Math.min(free.r, pr.left - 8); }
     if (!panel || area === 'overview') { offset.xTo = 0; offset.yTo = 0; return; }
-    const r = panel.getBoundingClientRect();
+    const r = pr;
     if (isMobileLayout()) { offset.xTo = 0; offset.yTo = Math.min(r.height, H * 0.6) / 2; }
     else { offset.xTo = (r.width + 24) / 2; offset.yTo = 0; }
   }
@@ -315,7 +320,7 @@ export async function start() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'marker' + (d.fish ? ' fish' : '');
-    b.innerHTML = `<span class="m-label">${d.label}</span><span class="m-sub">${d.sub}</span>`;
+    b.innerHTML = `<span class="m-arrow" aria-hidden="true"></span><span class="m-label">${d.label}</span><span class="m-sub">${d.sub}</span>`;
     b.setAttribute('aria-label', `${d.label}（${d.sub}）へ移動`);
     b.addEventListener('click', () => nav(d.id));
     ui.markers.appendChild(b);
@@ -335,11 +340,32 @@ export async function start() {
       const show = !diving && (m.id === 'dive' ? (area === 'bar' || area === 'overview') : m.id !== area);
       m.v.set(...m.at);
       m.v.project(camera);
-      const visible = show && m.v.z < 1 && Math.abs(m.v.x) < 1.05 && Math.abs(m.v.y) < 1.05;
-      m.el.classList.toggle('off', !visible);
+      m.el.classList.toggle('off', !show);
       m.el.classList.toggle('locked', !entered && LOCKED.has(m.id));
+      if (!show) continue;
       // setViewOffset のずれは projection に入っているので、そのまま画面座標になる
-      if (visible) m.el.style.transform = `translate(${((m.v.x * 0.5 + 0.5) * W).toFixed(1)}px, ${((-m.v.y * 0.5 + 0.5) * H).toFixed(1)}px)`;
+      const behind = m.v.z > 1;
+      let x = (m.v.x * 0.5 + 0.5) * W, y = (-m.v.y * 0.5 + 0.5) * H;
+      if (behind) { x = W - x; y = H - y; }
+      // 目印の大きさ分を内側に。見えている範囲にあればその場所、外なら端に矢印つきで出す
+      const mx = 64, my = 28;
+      const L = free.l + mx, Rr = free.r - mx, T = free.t + my * 2, B = free.b - 4;
+      const inside = !behind && x >= L && x <= Rr && y >= T && y <= B;
+      m.el.classList.toggle('edge', !inside);
+      if (inside) { m.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`; continue; }
+      if (behind) { // カメラの後ろ（ふり返った先）は、下の端に下向き矢印で
+        m.el.style.transform = `translate(${Math.min(Rr, Math.max(L, x)).toFixed(1)}px, ${B.toFixed(1)}px)`;
+        m.el.style.setProperty('--a', Math.PI / 2 + 'rad');
+        continue;
+      }
+      const Bc = B - my; // 端の目印は中心で位置を決め、表示は下端基準なので my を足す
+      const cx = (L + Rr) / 2, cy = (T + Bc) / 2;
+      let dx = x - cx, dy = y - cy;
+      if (Math.abs(dx) < 1e-3 && Math.abs(dy) < 1e-3) dx = 1;
+      const k = Math.min(dx ? (dx > 0 ? Rr - cx : L - cx) / dx : Infinity, dy ? (dy > 0 ? Bc - cy : T - cy) / dy : Infinity);
+      const ex = cx + dx * k, ey = cy + dy * k + my; // 端の目印は中心基準なので、下向きの補正をもどす
+      m.el.style.transform = `translate(${ex.toFixed(1)}px, ${ey.toFixed(1)}px)`;
+      m.el.style.setProperty('--a', Math.atan2(dy, dx) + 'rad');
     }
   }
 
