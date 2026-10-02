@@ -761,12 +761,12 @@ class World {
     this.anim.push(t => FX.light && (() => { neon.material.opacity = 0.88 + Math.sin(t * 9) * 0.04 + (Math.sin(t * 0.9) > 0.97 ? -0.4 : 0); })());
 
     // 仕切りのポスター（えびダイブ食堂のサムネ）
-    loader.load('ebi-dive/thumbnail.png', tex => {
+    loader.load('og-image.png', tex => { // サイトのサムネイルと同じ絵
       tex.colorSpace = THREE.SRGBColorSpace;
-      const p = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.125), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.05), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
       p.position.set(6.75, 1.75, 3.34);
       this.scene.add(p);
-      const frame = this.box(2.12, 1.245, 0.04, this.mat('#c99a5b', { metalness: 0.4, roughness: 0.4 }), 6.75, 1.75, 3.31);
+      const frame = this.box(2.12, 1.17, 0.04, this.mat('#c99a5b', { metalness: 0.4, roughness: 0.4 }), 6.75, 1.75, 3.31);
       void frame;
     });
     // 観葉植物
