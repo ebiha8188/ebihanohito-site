@@ -186,6 +186,47 @@
   .song-more { margin: 0; font-size: 13px; }
   .song-more a { color: var(--muted); }
 
+  /* おまかせドリンクスロット */
+  .slot-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: linear-gradient(135deg, rgba(255, 143, 184, 0.14), rgba(255, 211, 107, 0.12)); border: 1px solid rgba(255, 211, 107, 0.45); }
+  .slot-entry-title { margin: 0; font-family: var(--display); font-size: 14.5px; letter-spacing: 0.02em; }
+  .slot-entry-note { margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .slot-open { font-family: var(--display); font-size: 14px; color: #2a1a00; background: #ffd36b; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; box-shadow: 0 3px 0 #c99a2e; white-space: nowrap; }
+  .slot-open:active { transform: translateY(2px); box-shadow: 0 1px 0 #c99a2e; }
+  .slot { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(2, 8, 12, 0.72); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+  .slot[hidden] { display: none; }
+  .slot-card { position: relative; width: min(440px, 100%); max-height: calc(100dvh - 32px); overflow: auto; display: grid; gap: 12px; padding: 22px 20px 18px; border-radius: 22px; background: linear-gradient(180deg, #2a1712, #160c0a); border: 1px solid #7a4a2a; box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255, 200, 140, 0.15); color: var(--ink); text-align: center; }
+  .slot-close { position: absolute; top: 10px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; }
+  .slot-title { font-size: 24px; color: #ffd36b; text-shadow: 0 0 14px rgba(255, 179, 107, 0.4); }
+  .slot-tickets { margin: 0; font-size: 14px; color: var(--muted); }
+  .slot-tickets b { font-family: var(--display); font-weight: 400; font-size: 22px; color: #ffd36b; margin: 0 2px; }
+  .slot-machine { position: relative; padding: 12px; border-radius: 16px; background: linear-gradient(180deg, #b07a45, #6b4423); box-shadow: inset 0 2px 0 rgba(255,255,255,0.25), 0 6px 0 #3b2418; }
+  .reels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .reel { height: 96px; overflow: hidden; border-radius: 10px; background: linear-gradient(180deg, #d9d2c3, #fffaf0 30%, #fffaf0 70%, #d9d2c3); box-shadow: inset 0 3px 8px rgba(0,0,0,0.35); }
+  .strip { display: grid; will-change: transform; }
+  .strip span { height: 96px; display: grid; place-items: center; font-size: 52px; line-height: 1; }
+  .payline { position: absolute; left: 6px; right: 6px; top: 50%; height: 2px; translate: 0 -50%; background: rgba(226, 80, 44, 0.55); pointer-events: none; }
+  .slot-msg { margin: 0; min-height: 3.2em; display: grid; place-items: center; font-weight: 700; font-size: 15px; line-height: 1.6; }
+  .slot-msg.win { color: #ffd36b; }
+  .slot-msg.big { color: #ff8fb8; font-family: var(--display); font-weight: 400; font-size: 20px; animation: big-win 0.6s ease-in-out 3; }
+  @keyframes big-win { 50% { transform: scale(1.08); text-shadow: 0 0 18px rgba(255, 143, 184, 0.8); } }
+  .slot-actions { display: grid; gap: 8px; }
+  .slot-spin { font-family: var(--display); font-size: 18px; letter-spacing: 0.04em; color: #2a0d05; background: var(--shrimp); border: 0; border-radius: 999px; padding: 12px 20px; cursor: pointer; box-shadow: 0 5px 0 #e2502c; }
+  .slot-spin:active { transform: translateY(3px); box-shadow: 0 2px 0 #e2502c; }
+  .slot-spin:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: 0 5px 0 #e2502c; }
+  .slot-refill { font: inherit; font-weight: 700; font-size: 13px; color: var(--ink); background: rgba(126, 240, 255, 0.12); border: 1px solid rgba(126, 240, 255, 0.5); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+  .slot-rules { text-align: left; font-size: 13px; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
+  .slot-rules summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+  .slot-rules ul { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; }
+  .slot-rules li { display: grid; grid-template-columns: 7.5em 1fr auto; gap: 8px; align-items: center; }
+  .slot-rules li span { font-size: 15px; letter-spacing: -0.05em; }
+  .slot-rules li b { color: #ffd36b; white-space: nowrap; }
+  .slot-rules p { margin: 6px 0 0; font-size: 11.5px; }
+  .slot-served { text-align: left; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
+  .slot-served p { margin: 0 0 4px; font-size: 12px; color: var(--muted); font-weight: 700; }
+  .served-list { display: flex; flex-wrap: wrap; gap: 2px; font-size: 22px; min-height: 30px; }
+  .served-none { font-size: 12px; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { .slot-msg.big { animation: none; } }
+
   /* 入場（ドリンクチケット） */
   .entry { display: grid; gap: 8px; padding: 14px; border-radius: 14px; background: rgba(255, 211, 107, 0.08); border: 1px dashed rgba(255, 211, 107, 0.55); }
   .entry-title { margin: 0; font-weight: 700; }
@@ -249,7 +290,7 @@
   <a class="brand" href="#reception" data-go="reception">
     <img src="avatar.png" alt="" width="34" height="34">
     <span><b>えびは</b><small>GALLERY</small></span>
-    <span class="ticket-chip" aria-label="ドリンクチケット受け取り済み">1 DRINK</span>
+    <span class="ticket-chip" aria-label="ドリンクチケットの枚数">🎫 ×<b id="chip-count">1</b></span>
   </a>
   <nav class="nav" aria-label="館内案内">
     <a href="#reception" data-go="reception">受付</a>
@@ -310,6 +351,13 @@
       <button class="fold" type="button" aria-expanded="true" aria-label="パネルをたたむ">▼</button>
     </div>
     <p class="lead only3d">カウンター横の水槽をのぞくと、作品の世界へもぐれます。</p>
+    <div class="slot-entry only3d">
+      <div>
+        <p class="slot-entry-title">🍸 おまかせドリンクスロット</p>
+        <p class="slot-entry-note">ドリンクチケット1枚で、バーテンダーにおまかせ注文。そろえばチケットが増えます。</p>
+      </div>
+      <button class="slot-open" type="button">注文する</button>
+    </div>
     <!-- 作品を増やすときは、この article をコピーして中身を書き換える -->
     <article class="card">
       <a class="thumb" href="ebi-dive/" aria-label="えびダイブ食堂を遊ぶ"><img src="ebi-dive/thumbnail.png" alt="えびダイブ食堂のタイトル画像" loading="lazy" width="1920" height="1080"></a>
@@ -398,6 +446,39 @@
   </section>
 </main>
 
+<div id="slot" class="slot" hidden role="dialog" aria-modal="true" aria-labelledby="slot-title">
+  <div class="slot-card">
+    <button class="slot-close" type="button" aria-label="閉じる">×</button>
+    <p class="eyebrow">BAR COUNTER ・ おまかせ</p>
+    <h2 id="slot-title" class="slot-title">おまかせドリンクスロット</h2>
+    <p class="slot-tickets">ドリンクチケット <b id="slot-count">1</b> 枚</p>
+    <div class="slot-machine">
+      <div class="reels" aria-hidden="true"><div class="reel"><div class="strip"></div></div><div class="reel"><div class="strip"></div></div><div class="reel"><div class="strip"></div></div></div>
+      <div class="payline" aria-hidden="true"></div>
+    </div>
+    <p class="slot-msg" id="slot-msg" aria-live="polite">チケット1枚で、バーテンダーにおまかせ注文。</p>
+    <div class="slot-actions">
+      <button class="slot-spin" id="slot-spin" type="button">🎫 1枚で注文する！</button>
+      <button class="slot-refill" id="slot-refill" type="button" hidden>お冷やをもらって出直す（チケット+1）</button>
+    </div>
+    <details class="slot-rules">
+      <summary>配当表</summary>
+      <ul>
+        <li><span>🦐🦐🦐</span>えびカクテル（大当たり） <b>+30枚</b></li>
+        <li><span>🍹🍹🍹</span>トロピカル <b>+12枚</b></li>
+        <li><span>🥃🥃🥃</span>ハイボール <b>+8枚</b></li>
+        <li><span>🍺🍺🍺 🍋🍋🍋</span>ビール・レモンサワー <b>+5枚</b></li>
+        <li><span>どれか2つ</span>その1杯が出てくる <b>+2枚</b></li>
+        <li><span>💧💧💧</span>お冷や3杯 <b>+1枚（タダでもう1回）</b></li>
+      </ul>
+      <p>チケットはこのサイトの中だけの架空のものです。お金は一切かかりません。ページを開き直すとリセットされます。</p>
+    </details>
+    <div class="slot-served">
+      <p>出てきたドリンク</p>
+      <div id="slot-served" class="served-list"><span class="served-none">まだありません</span></div>
+    </div>
+  </div>
+</div>
 <div id="speech" class="off" aria-live="polite"><span></span></div>
 <div id="toast" role="status"></div>
 <div id="hint">ドラッグで見まわせます ・ 場所をタップで移動</div>
@@ -406,7 +487,7 @@
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100229';
+  const ASSET_VERSION = '2026100231';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();

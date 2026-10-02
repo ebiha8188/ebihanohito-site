@@ -125,9 +125,13 @@ export async function start() {
   let diving = false;
   // 入場：受付でドリンクチケットを受け取るまで、バーカンとステージには入れない。
   // ページを開きなおすたびに受付から。ただし水槽からゲームへ行って戻ってきたときだけは入場済みのまま
-  const RETURN_KEY = 'ebiha-return';
-  let entered = false;
-  try { entered = sessionStorage.getItem(RETURN_KEY) === '1'; sessionStorage.removeItem(RETURN_KEY); } catch (e) { /* 保存できなくても動く */ }
+  const RETURN_KEY = 'ebiha-return', TICKET_KEY = 'ebiha-tickets';
+  let entered = false, tickets = 0;
+  try {
+    entered = sessionStorage.getItem(RETURN_KEY) === '1';
+    if (entered) tickets = Math.max(0, parseInt(sessionStorage.getItem(TICKET_KEY), 10) || 0);
+    sessionStorage.removeItem(RETURN_KEY); sessionStorage.removeItem(TICKET_KEY);
+  } catch (e) { /* 保存できなくても動く */ }
   let pending = null; // 払う前に行こうとした場所。払ったらそこへ
   const LOCKED = new Set(['bar', 'stage', 'dive']);
 
@@ -145,6 +149,10 @@ export async function start() {
   };
   ui.root.dataset.entry = entered ? 'open' : 'locked';
   if (entered) world.openGate(true);
+  const chipCount = document.getElementById('chip-count');
+  function setTickets(n) { tickets = n; chipCount.textContent = n; slot.update(); }
+  const slot = drinkSlot({ getTickets: () => tickets, setTickets: n => setTickets(n), world, toast: t => toast(t) });
+  setTickets(tickets);
 
   // ---------- 画面サイズ ----------
   let W = 1, H = 1, distMul = 1;
@@ -227,7 +235,7 @@ export async function start() {
 
   function dive() {
     if (diving) return;
-    try { sessionStorage.setItem(RETURN_KEY, '1'); } catch (e) { /* なくても遊べる */ }
+    try { sessionStorage.setItem(RETURN_KEY, '1'); sessionStorage.setItem(TICKET_KEY, String(tickets)); } catch (e) { /* なくても遊べる */ }
     if (reduceMotion) { location.href = 'ebi-dive/'; return; }
     diving = true;
     ui.root.classList.add('diving');
@@ -277,6 +285,7 @@ export async function start() {
   function pay() {
     if (entered) return;
     entered = true;
+    setTickets(1);
     ui.pay.disabled = true;
     say('まいど！ドリンクチケットどうぞ');
     // コインは画面の少し手前・下から投げる
@@ -381,8 +390,9 @@ export async function start() {
     const hits = raycaster.intersectObjects(world.hotspots, true);
     const songHit = hits.some(h => h.object.userData.go === 'song');
     if (songHit && area === 'stage' && world.songUrl) return 'song';
+    if (area === 'bar' && entered && hits.some(h => h.object.userData.go === 'slot')) return 'slot';
     for (const h of hits) {
-      if (h.object.userData.go === 'song') continue;
+      if (h.object.userData.go === 'song' || h.object.userData.go === 'slot') continue;
       let o = h.object;
       while (o && !o.userData.go) o = o.parent;
       if (o) return o.userData.go;
@@ -422,6 +432,7 @@ export async function start() {
     if (wasClick && e.type === 'pointerup') {
       const g = pick(e.clientX, e.clientY);
       if (g === 'song') window.open(world.songUrl, '_blank', 'noopener');
+      else if (g === 'slot') slot.open();
       else if (g === 'reception' && area === 'reception' && !entered) pay();
       else if (g && g !== area) nav(g);
     }
@@ -431,6 +442,7 @@ export async function start() {
   canvas.addEventListener('pointerleave', () => { if (hovered) { hovered = null; world.setHover(null); } });
   addEventListener('keydown', e => {
     if (e.target.closest && e.target.closest('input, textarea')) return;
+    if (!document.getElementById('slot').hidden) return; // スロット中は場所移動のキーを使わない
     const keys = { '1': 'reception', '2': 'bar', '3': 'stage', '0': 'overview' };
     if (keys[e.key]) nav(keys[e.key]);
   });
@@ -505,6 +517,108 @@ export async function start() {
   else setTimeout(() => go(first, { push: false }), 650);
   setTimeout(() => ui.hint.classList.add('done'), 9000);
   if (new URLSearchParams(location.search).has('debug')) debugPanel({ renderer, scene, world, dbg, setDpr: v => { dpr = v; renderer.setPixelRatio(v); resize(); }, getDpr: () => dpr });
+}
+
+// ---------- おまかせドリンクスロット ----------
+// チケット1枚で3つのリールが回る。そろったドリンクが「出てきて」カウンターに並ぶ。
+// 期待値は1枚あたり約0.96枚（少しだけ店が得）。2つそろいで+2、3つそろいで配当。お金とは無関係の架空のチケット
+const DRINKS = [
+  { e: '🍺', name: 'ビール', color: '#f2b233', w: 4, pay: 5 },
+  { e: '🍋', name: 'レモンサワー', color: '#f4e04d', w: 4, pay: 5 },
+  { e: '🥃', name: 'ハイボール', color: '#c9822b', w: 3, pay: 8 },
+  { e: '🍹', name: 'トロピカル', color: '#ff7a57', w: 2, pay: 12 },
+  { e: '🦐', name: 'えびカクテル', color: '#ff8fb8', w: 1, pay: 30 },
+  { e: '💧', name: 'お冷や', color: '#cfefff', w: 3, pay: 0 },
+];
+const DRINK_W = DRINKS.reduce((a, d) => a + d.w, 0);
+function drawDrink() { let r = Math.random() * DRINK_W; for (const d of DRINKS) { r -= d.w; if (r < 0) return d; } return DRINKS[0]; }
+
+function drinkSlot({ getTickets, setTickets, world, toast }) {
+  const root = document.getElementById('slot');
+  const strips = [...root.querySelectorAll('.strip')];
+  const msg = document.getElementById('slot-msg');
+  const count = document.getElementById('slot-count');
+  const spinBtn = document.getElementById('slot-spin');
+  const refill = document.getElementById('slot-refill');
+  const servedList = document.getElementById('slot-served');
+  const CELL = 96;
+  let spinning = false, lastFocus = null;
+  strips.forEach(st => { st.innerHTML = `<span>${DRINKS[Math.floor(Math.random() * 5)].e}</span>`; });
+
+  function update() {
+    const n = getTickets();
+    count.textContent = n;
+    spinBtn.disabled = spinning || n < 1;
+    refill.hidden = spinning || n > 0;
+  }
+  function say(text, cls = '') { msg.textContent = text; msg.className = 'slot-msg ' + cls; }
+  function open() {
+    lastFocus = document.activeElement;
+    root.hidden = false;
+    update();
+    if (getTickets() < 1) say('チケットがありません。お冷やで出直しましょう。');
+    spinBtn.focus();
+  }
+  function close() { if (spinning) return; root.hidden = true; if (lastFocus) lastFocus.focus(); }
+  function serve(d) {
+    servedList.querySelector('.served-none')?.remove();
+    const s = document.createElement('span'); s.textContent = d.e; s.title = d.name;
+    servedList.appendChild(s);
+    world.serveDrink(d.color);
+  }
+  function spin() {
+    if (spinning || getTickets() < 1) return;
+    spinning = true;
+    setTickets(getTickets() - 1);
+    say('シャカシャカ…');
+    const result = [drawDrink(), drawDrink(), drawDrink()];
+    const fast = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const done = strips.map((st, i) => new Promise(res => {
+      const n = fast ? 1 : 14 + i * 6;
+      const cells = [st.lastElementChild.textContent];
+      for (let k = 0; k < n - 1; k++) cells.push(DRINKS[Math.floor(Math.random() * DRINKS.length)].e);
+      cells.push(result[i].e);
+      st.style.transition = 'none';
+      st.style.transform = 'translateY(0)';
+      st.innerHTML = cells.map(e => `<span>${e}</span>`).join('');
+      void st.offsetHeight;
+      st.style.transition = fast ? 'none' : `transform ${0.9 + i * 0.45}s cubic-bezier(.15,.7,.25,1.04)`;
+      st.style.transform = `translateY(${-(cells.length - 1) * CELL}px)`;
+      setTimeout(res, fast ? 0 : (0.9 + i * 0.45) * 1000 + 60);
+    }));
+    Promise.all(done).then(() => {
+      // 次の回のために、見えている1コマだけ残す
+      strips.forEach(st => { st.style.transition = 'none'; st.style.transform = 'translateY(0)'; st.innerHTML = `<span>${st.lastElementChild.textContent}</span>`; });
+      settle(result);
+      spinning = false;
+      update();
+      spinBtn.focus();
+    });
+  }
+  function settle([a, b, c]) {
+    if (a === b && b === c) {
+      if (a.pay === 0) { setTickets(getTickets() + 1); say('お冷や3杯…タダでもう1回どうぞ', 'win'); serve(a); return; }
+      setTickets(getTickets() + a.pay);
+      serve(a); serve(a); serve(a);
+      if (a.e === '🦐') { say(`大当たり！えびカクテル！ チケット+${a.pay}枚`, 'big'); toast('🦐 大当たり！えびカクテル！'); }
+      else say(`${a.name}がそろった！ チケット+${a.pay}枚`, 'win');
+      return;
+    }
+    const pair = a === b ? a : b === c ? b : a === c ? a : null;
+    if (pair && pair.pay > 0) { setTickets(getTickets() + 2); serve(pair); say(`${pair.name}をどうぞ。おまけでチケット+2枚`, 'win'); return; }
+    if (pair) { say('お冷やです。…ハズレ'); serve(pair); return; }
+    say(['ハズレ…バーテンダーが首をかしげた', 'ハズレ…氷だけ出てきた', 'ハズレ…もう一杯いく？'][Math.floor(Math.random() * 3)]);
+  }
+  spinBtn.addEventListener('click', spin);
+  refill.addEventListener('click', () => { setTickets(getTickets() + 1); say('お冷やをどうぞ。チケットを1枚もらいました'); serve(DRINKS[5]); });
+  root.querySelector('.slot-close').addEventListener('click', close);
+  root.addEventListener('click', e => { if (e.target === root) close(); });
+  addEventListener('keydown', e => {
+    if (root.hidden) return;
+    if (e.key === 'Escape') close();
+  });
+  document.querySelectorAll('.slot-open').forEach(b => b.addEventListener('click', open));
+  return { open, update };
 }
 
 // ---------- 切り分け用パネル（?debug のときだけ） ----------
@@ -959,6 +1073,27 @@ class World {
       bart.userData.wave(t * 1.3);
     });
     this.hotspot('bar', [2.8, 3.4, 5.8, -6.4, 1.7, -0.9]);
+    this.hotspot('slot', [0.9, 1.9, 1.0, -6.85, 1.3, -1.4]);
+    // スロットで出てきたドリンクを、カウンターの客側に並べる（古いものから入れ替え）
+    this.served = [];
+    this.serveDrink = color => {
+      const z0 = -3.45, step = 0.42, slots = 12;
+      const i = this.served.length % slots;
+      if (this.served[i]) { this.scene.remove(this.served[i]); }
+      const glass = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.17, 12), M({ color, emissive: color, emissiveIntensity: 0.35, unique: true }));
+      body.position.y = 0.085; glass.add(body);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.03, 12), M({ color: '#e8f8ff', transparent: true, opacity: 0.6, unique: true }));
+      rim.position.y = 0.18; glass.add(rim);
+      glass.position.set(-5.32, 1.16, z0 + i * step);
+      this.scene.add(glass);
+      this.served[i] = glass;
+      if (this.served.length > slots) this.served.length = slots;
+      // ぽんと置かれる
+      const t0 = performance.now();
+      const pop = () => { const k = Math.min(1, (performance.now() - t0) / 350); glass.scale.setScalar(0.3 + 0.7 * (1 - Math.pow(1 - k, 3)) + Math.sin(Math.PI * k) * 0.15); if (k < 1) requestAnimationFrame(pop); };
+      pop();
+    };
     void loader;
   }
 
