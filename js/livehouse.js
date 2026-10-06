@@ -1,5 +1,5 @@
 // えびは LIVE HOUSE — トップページの3D模型
-// 受付（プロフィール）／バーカン（作品一覧・水槽からえびダイブへ）／DJブース（入口の壁ぞい）／ステージとフロア（COMING SOON）
+// 受付（プロフィール）／バーカン（作品一覧・水槽からえびダイブへ）／DJブース（入口の壁ぞい、チケットなしで入れる）／ステージとフロア（おすすめの曲）
 import * as THREE from '../vendor/three.module.min.js';
 
 const FONT_DISPLAY = '"Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif';
@@ -59,11 +59,12 @@ const VIEWS = {
   reception: { pos: [3.4, 2.3, 12.2], target: [3.4, 1.55, 4.4] },
   bar:       { pos: [0.2, 2.9, 5.6],  target: [-6.0, 1.3, 0.2], narrow: { pos: [-0.8, 3.4, 4.8], target: [-6.2, 1.2, 0.7] } },
   stage:     { pos: [0, 3.7, 3.4],    target: [0, 1.7, -7.0], narrow: { pos: [0, 4.4, 2.4], target: [0, 1.6, -7.2] } },
+  dj:        { pos: [-1.6, 2.9, 5.4], target: [-7.0, 1.4, 4.75], maxMul: 1.4 },
 };
 // narrow：縦長の画面用。ふつうは被写体から離れて画角を稼ぐが、バーカンとステージでは
 // 離れると受付裏の仕切りがカメラの前に入るので、仕切りより内側の決め打ちの位置から見る
-const AREA_OF_HASH = { '': 'reception', '#reception': 'reception', '#bar': 'bar', '#works': 'bar', '#stage': 'stage', '#floor': 'stage', '#overview': 'overview' };
-const HASH_OF_AREA = { reception: '#reception', bar: '#bar', stage: '#stage', overview: '#overview' };
+const AREA_OF_HASH = { '': 'reception', '#reception': 'reception', '#bar': 'bar', '#works': 'bar', '#stage': 'stage', '#floor': 'stage', '#dj': 'dj', '#overview': 'overview' };
+const HASH_OF_AREA = { reception: '#reception', bar: '#bar', stage: '#stage', dj: '#dj', overview: '#overview' };
 
 export async function start() {
   const canvas = document.getElementById('scene');
@@ -214,7 +215,7 @@ export async function start() {
       if (on) { p.classList.remove('collapsed'); p.scrollTop = 0; }
     });
     ui.navBtns.forEach(b => b.setAttribute('aria-current', b.dataset.go === name ? 'page' : 'false'));
-    document.title = { reception: 'えびは', bar: '作品一覧（バーカン）｜えびは', stage: 'ステージとフロア｜えびは', overview: '全体｜えびは' }[name];
+    document.title = { reception: 'えびは', bar: '作品一覧（バーカン）｜えびは', stage: 'ステージとフロア｜えびは', dj: 'DJブース｜えびは', overview: '全体｜えびは' }[name];
     if (push) {
       const hash = name === 'reception' ? location.pathname + location.search : HASH_OF_AREA[name];
       if ((location.hash || '') !== (name === 'reception' ? '' : HASH_OF_AREA[name])) history.pushState({ area: name }, '', hash);
@@ -324,6 +325,7 @@ export async function start() {
     { id: 'bar', label: 'バーカン', sub: '作品一覧', at: [-6.6, 3.55, -1.0] },
     { id: 'dive', label: '水槽をのぞく', sub: 'えびダイブ食堂へ', at: [-6.15, 2.55, 2.45], fish: true },
     { id: 'stage', label: 'ステージ', sub: 'おすすめの曲', at: [0, 4.6, -7.0] },
+    { id: 'dj', label: 'DJブース', sub: '入口の横', at: [-7.1, 3.15, 4.75] },
   ];
   const markers = markerDefs.map(d => {
     const b = document.createElement('button');
@@ -443,7 +445,7 @@ export async function start() {
   addEventListener('keydown', e => {
     if (e.target.closest && e.target.closest('input, textarea')) return;
     if (!document.getElementById('slot').hidden) return; // スロット中は場所移動のキーを使わない
-    const keys = { '1': 'reception', '2': 'bar', '3': 'stage', '0': 'overview' };
+    const keys = { '1': 'reception', '2': 'bar', '3': 'stage', '4': 'dj', '0': 'overview' };
     if (keys[e.key]) nav(keys[e.key]);
   });
 
@@ -651,7 +653,7 @@ function debugPanel({ renderer, scene, world, dbg, setDpr, getDpr }) {
     ['particles', '模型のまわりの粒', true, vis([d.particles])],
     ['floor', '床（ホール・ロビー）', true, vis(d.floors)],
     ['stageLight', 'ステージの点光源', true, vis([L.stage])],
-    ['pointLights', '受付・バーの点光源', true, vis([L.recep, L.bar])],
+    ['pointLights', '受付・バー・DJの点光源', true, vis([L.recep, L.bar, L.dj])],
     ['ambient', '環境光・太陽光', true, vis([L.hemi, L.key])],
     ['lit', '光の計算（オフ＝全部単色）', true, on => setBasic(!on)],
     ['tone', 'トーンマッピング', true, on => { renderer.toneMapping = on ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping; scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); }); }],
@@ -765,13 +767,14 @@ class World {
     s.add(key);
     const recep = new THREE.PointLight('#ffd9a8', 14, 9, 1.6); recep.position.set(3.2, 3.2, 6.6); s.add(recep);
     const bar = new THREE.PointLight('#ffb36b', 16, 9, 1.6); bar.position.set(-5.6, 3.1, -0.6); s.add(bar);
+    const dj = new THREE.PointLight('#e0c4ff', 7, 4.5, 1.6); dj.position.set(-5.9, 2.6, 4.75); s.add(dj);
     // ステージは1灯で色を回す
     const stage = new THREE.PointLight('#ff5fa8', 26, 13, 1.4); stage.position.set(0, 3.6, -5.6); s.add(stage);
     const pink = new THREE.Color('#ff5fa8'), blue = new THREE.Color('#5f8bff');
     this.anim.push(t => FX.light && (() => { stage.color.lerpColors(pink, blue, Math.sin(t * 0.9) * 0.5 + 0.5); })());
     stage.color.lerpColors(pink, blue, 0.5);
     const hemi = s.children.find(o => o.isHemisphereLight);
-    this.dbg.lights = { hemi, key, recep, bar, stage };
+    this.dbg.lights = { hemi, key, recep, bar, dj, stage };
   }
 
   // ---------- 台座・床・壁 ----------
@@ -1180,6 +1183,7 @@ class World {
     this.box(1.4, 0.05, 0.72, this.mat('#2a2733'), 0, 1.025, 0, g);
     // 正面の光るパネル（色がゆっくり変わる）
     const panelM = M({ unique: true, color: '#111', emissive: '#ff5fa8', emissiveIntensity: 0.9 });
+    this.addHover('dj', panelM, 0.9, 1.6);
     const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.14, 0.62), panelM);
     panel.position.set(0, 0.55, 0.315); panel.userData.keep = true; g.add(panel);
     const logo = neonPlane('DJ', '#ffffff', 0.8, 0.38);
@@ -1254,6 +1258,7 @@ class World {
       else panelM.emissive.lerpColors(green, pink, k - 2);
       halo.material.opacity = 0.35 + beat * 0.2;
     });
+    this.hotspot('dj', [1.7, 2.9, 1.7, -7.05, 1.45, 4.75]);
   }
 
   // ---------- ステージ ----------
