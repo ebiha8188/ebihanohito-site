@@ -1,5 +1,5 @@
 // えびは LIVE HOUSE — トップページの3D模型
-// 受付（プロフィール）／バーカン（作品一覧・水槽からえびダイブへ）／ステージとフロア（COMING SOON）
+// 受付（プロフィール）／バーカン（作品一覧・水槽からえびダイブへ）／DJブース（水槽の横）／ステージとフロア（COMING SOON）
 import * as THREE from '../vendor/three.module.min.js';
 
 const FONT_DISPLAY = '"Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif';
@@ -84,7 +84,7 @@ export async function start() {
   try {
     await Promise.race([
       Promise.all([
-        document.fonts.load(`80px ${FONT_DISPLAY}`, 'えびはLIVEHOUSEBARMENU受付RECEPTIONCOMINGSOONダイブ食堂作品一覧ENTRANCE今後なにかが始まりますおたのしみに水槽→STAGEFLOOR0123456789DRINKTICKETFREEGALLERYEBI'),
+        document.fonts.load(`80px ${FONT_DISPLAY}`, 'えびはLIVEHOUSEBARMENU受付RECEPTIONCOMINGSOONダイブ食堂作品一覧ENTRANCEDJ今後なにかが始まりますおたのしみに水槽→STAGEFLOOR0123456789DRINKTICKETFREEGALLERYEBI'),
         document.fonts.load(`700 40px ${FONT_BODY}`, 'えびダイブ食堂作品一覧水槽をのぞくとゲームの世界へ本日のおすすめランキング料理ドリンクビールレモンサワー受付はこちら'),
       ]),
       new Promise(r => setTimeout(r, 2500)),
@@ -730,6 +730,7 @@ class World {
     this.reception(loader);
     this.bar(loader);
     this.aquarium();
+    this.djBooth();
     this.stage();
     this.floorCrowd();
     this.seaParticles();
@@ -1164,6 +1165,88 @@ class World {
       if (FX.light) halo.material.opacity = 0.5 + Math.sin(t * 2) * 0.1;
     });
     this.hotspot('dive', [1.1, 2.3, 1.6, -6.2, 1.15, 2.45]);
+  }
+
+  // ---------- DJブース（水槽の横、ロビー向き） ----------
+  djBooth() {
+    const g = new THREE.Group();
+    g.position.set(-4.3, 0, 2.95);
+    this.scene.add(g);
+    // 卓（客側が +z）
+    const front = this.mat('#15131c', { roughness: 0.6 });
+    this.box(1.7, 1.0, 0.62, front, 0, 0.5, 0, g);
+    this.box(1.8, 0.05, 0.72, this.mat('#2a2733'), 0, 1.025, 0, g);
+    // 正面の光るパネル（色がゆっくり変わる）
+    const panelM = M({ unique: true, color: '#111', emissive: '#ff5fa8', emissiveIntensity: 0.9 });
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.62), panelM);
+    panel.position.set(0, 0.55, 0.315); panel.userData.keep = true; g.add(panel);
+    const logo = neonPlane('DJ', '#ffffff', 0.9, 0.42);
+    logo.position.set(0, 0.56, 0.33); g.add(logo);
+    // ターンテーブル2台とミキサー
+    const plinth = this.mat('#9aa0a8', { metalness: 0.6, roughness: 0.4 });
+    const vinyl = this.mat('#0c0c10', { roughness: 0.3 });
+    const discs = [];
+    [[-0.5, '#ff7a57'], [0.5, '#7ef0ff']].forEach(([x, c]) => {
+      this.box(0.56, 0.05, 0.5, plinth, x, 1.075, 0, g);
+      const d = new THREE.Group();
+      d.position.set(x - 0.03, 1.11, 0.02);
+      this.cyl(0.2, 0.2, 0.02, vinyl, 0, 0, 0, d, 24);
+      this.cyl(0.07, 0.07, 0.022, this.mat(c, { emissive: c, emissiveIntensity: 0.3 }), 0, 0, 0, d, 14);
+      this.box(0.02, 0.024, 0.06, this.mat('#f5f1e8'), 0, 0, 0.04, d); // 回っているのがわかる印
+      g.add(d); discs.push(d);
+      const arm = this.box(0.025, 0.02, 0.3, this.mat('#dfe3e8', { metalness: 0.8 }), x + 0.2, 1.12, -0.02, g);
+      arm.rotation.y = 0.35;
+    });
+    this.box(0.34, 0.07, 0.46, this.mat('#22202a'), 0, 1.085, 0, g);
+    const knobColors = ['#ff5fa8', '#7ef0ff', '#c6ef6e', '#ffd36b'];
+    for (let i = 0; i < 8; i++) {
+      const c = knobColors[i % 4];
+      this.cyl(0.022, 0.022, 0.03, this.mat(c, { emissive: c, emissiveIntensity: 0.6 }), -0.08 + (i % 2) * 0.16, 1.13, -0.15 + Math.floor(i / 2) * 0.1, g, 8);
+    }
+    // 両わきのスピーカー
+    const cab = this.mat('#1b1a20', { roughness: 0.8 });
+    const cone = this.mat('#3a3a44', { roughness: 0.5 });
+    const cones = [];
+    [-1.15, 1.15].forEach(x => {
+      this.box(0.5, 1.3, 0.48, cab, x, 0.65, -0.05, g);
+      [[0.4, 0.17], [0.95, 0.1]].forEach(([y, r]) => {
+        const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.03, 18), cone);
+        c.rotation.x = Math.PI / 2; c.position.set(x, y, 0.2);
+        c.userData.keep = true; g.add(c); cones.push(c);
+      });
+    });
+    // DJのえび（ヘッドホン）
+    const dj = makeShrimp({ body: '#c9a2ff', belly: '#efe4ff' });
+    dj.position.set(0, 0.3, -0.62);
+    dj.scale.setScalar(0.9);
+    const hp = this.mat('#18161e');
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.39, 0.035, 6, 18, Math.PI), hp);
+    band.position.set(0, 1.3, 0); dj.add(band);
+    [-1, 1].forEach(sd => {
+      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.08, 14), this.mat('#ff5fa8', { emissive: '#ff5fa8', emissiveIntensity: 0.5 }));
+      cup.rotation.z = Math.PI / 2; cup.position.set(sd * 0.38, 1.28, 0); dj.add(cup);
+    });
+    g.add(dj);
+    // 後ろの光
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.4), new THREE.MeshBasicMaterial({ map: glowTex('#b07cff'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.5 }));
+    halo.position.set(0, 1.5, -1.0); g.add(halo);
+
+    const pink = new THREE.Color('#ff5fa8'), blue = new THREE.Color('#5f8bff'), green = new THREE.Color('#c6ef6e');
+    this.anim.push((t, dt) => {
+      for (const d of discs) d.rotation.y -= (dt || 0.016) * 3.5;
+      const beat = Math.abs(Math.sin(t * Math.PI * 2)); // 1秒に2拍（BPM120）
+      dj.position.y = 0.3 + beat * 0.05;
+      dj.rotation.x = beat * 0.08;
+      dj.rotation.y = Math.sin(t * 0.8) * 0.2;
+      dj.userData.wave(t * 1.2);
+      for (const c of cones) c.scale.setScalar(1 + beat * 0.06);
+      if (!FX.light) return;
+      const k = (t * 0.25) % 3;
+      if (k < 1) panelM.emissive.lerpColors(pink, blue, k);
+      else if (k < 2) panelM.emissive.lerpColors(blue, green, k - 1);
+      else panelM.emissive.lerpColors(green, pink, k - 2);
+      halo.material.opacity = 0.35 + beat * 0.2;
+    });
   }
 
   // ---------- ステージ ----------
