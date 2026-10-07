@@ -1243,9 +1243,14 @@ class World {
     halo.position.set(0, 1.6, -1.1); g.add(halo);
 
     const pink = new THREE.Color('#ff5fa8'), blue = new THREE.Color('#5f8bff'), green = new THREE.Color('#c6ef6e');
+    // ミックスを流している間だけレコードが回り、DJえびがノる（index.html の BGM プレイヤーが bgm:change を出す）
+    let playing = document.body.classList.contains('bgm-on'), groove = playing ? 1 : 0;
+    addEventListener('bgm:change', () => { playing = document.body.classList.contains('bgm-on'); });
     this.anim.push((t, dt) => {
-      for (const d of discs) d.rotation.y -= (dt || 0.016) * 3.5;
-      const beat = Math.abs(Math.sin(t * Math.PI * 2)); // 1秒に2拍（BPM120）
+      dt = dt || 0.016;
+      groove += ((playing ? 1 : 0) - groove) * Math.min(1, dt * 3);
+      for (const d of discs) d.rotation.y -= dt * 3.5 * groove;
+      const beat = Math.abs(Math.sin(t * Math.PI * 2)) * (0.15 + 0.85 * groove); // 1秒に2拍（BPM120）
       dj.position.y = 0.4 + beat * 0.05;
       dj.rotation.x = beat * 0.08;
       dj.rotation.y = Math.sin(t * 0.8) * 0.2;

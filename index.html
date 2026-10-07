@@ -186,6 +186,33 @@
   .song-more { margin: 0; font-size: 13px; }
   .song-more a { color: var(--muted); }
 
+  /* DJブースのミックス */
+  .mixes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .mix { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  .mix.playing { border-color: #c9a2ff; box-shadow: 0 0 0 1px #c9a2ff inset, 0 0 18px rgba(201, 162, 255, 0.25); }
+  .mix img, .mix .mix-noimg { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, #b07cff, #ff5fa8); display: block; }
+  .mix-title { margin: 0; font-weight: 700; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+  .mix-meta { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+  .mix-play { font: inherit; font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 999px; border: 0; cursor: pointer; background: #c9a2ff; color: #1d0f33; white-space: nowrap; }
+  .mix.playing .mix-play { background: transparent; color: #c9a2ff; border: 1px solid #c9a2ff; }
+  .mix-empty { color: var(--muted); font-size: 13.5px; padding: 14px; border: 1px dashed var(--line); border-radius: 14px; text-align: center; }
+  .mix-more { margin: 0; font-size: 13px; }
+  .mix-more a { color: var(--muted); }
+  /* どこにいても流れるBGMプレイヤー */
+  #bgm { position: fixed; z-index: 7; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: min(380px, calc(100% - 32px)); border-radius: 14px; overflow: hidden; background: rgba(12, 10, 22, 0.92); border: 1px solid rgba(201, 162, 255, 0.55); box-shadow: 0 10px 30px rgba(0,0,0,0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #bgm[hidden] { display: none; }
+  .bgm-head { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; font-size: 12px; color: var(--muted); }
+  .bgm-head b { font-family: var(--display); color: #c9a2ff; letter-spacing: 0.06em; font-weight: 400; }
+  .bgm-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+  .bgm-close { width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: var(--ink); cursor: pointer; font-size: 16px; line-height: 1; }
+  .bgm-player iframe { display: block; width: 100%; height: 60px; border: 0; }
+  .bgm-eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; }
+  .bgm-eq i { width: 3px; background: #c9a2ff; animation: eq 0.9s ease-in-out infinite alternate; }
+  .bgm-eq i:nth-child(2) { animation-delay: -0.3s; } .bgm-eq i:nth-child(3) { animation-delay: -0.6s; }
+  @keyframes eq { from { height: 3px; } to { height: 12px; } }
+  body.bgm-on #hint { display: none; }
+  .diving #bgm { opacity: 0; pointer-events: none; }
+
   /* おまかせドリンクスロット */
   .slot-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: linear-gradient(135deg, rgba(255, 143, 184, 0.14), rgba(255, 211, 107, 0.12)); border: 1px solid rgba(255, 211, 107, 0.45); }
   .slot-entry-title { margin: 0; font-family: var(--display); font-size: 14.5px; letter-spacing: 0.02em; }
@@ -276,7 +303,9 @@
     .is3d .profile-row { grid-template-columns: auto minmax(0, 1fr); }
     .is3d .thumb { aspect-ratio: 21 / 9; }
     #hint { bottom: auto; top: calc(116px + env(safe-area-inset-top, 0px)); left: 50%; translate: -50% 0; white-space: nowrap; }
+    #bgm { bottom: auto; top: calc(112px + env(safe-area-inset-top, 0px)); left: 12px; width: calc(100% - 24px); }
   }
+  @media (prefers-reduced-motion: reduce) { .bgm-eq i { animation: none; height: 8px; } }
   @media (prefers-reduced-motion: reduce) {
     .thumb img, #dive, .is3d .panel { transition: none; animation: none; }
     .marker.fish { animation: none; }
@@ -443,8 +472,10 @@
       </div>
       <button class="fold" type="button" aria-expanded="true" aria-label="パネルをたたむ">▼</button>
     </div>
-    <p class="lead">入口の横で、DJえびがレコードを回しています。ここは受付の前なので、チケットなしでも入れます。</p>
-    <div class="soon-card">ここで何が始まるかは、おたのしみに。</div>
+    <p class="lead">えびはのDJ mix。選ぶと、館内のどこにいてもBGMとして流れます。</p>
+    <!-- Mixcloud にアップしたミックスが自動で並ぶ（/api/mixes） -->
+    <ul class="mixes" aria-live="polite"><li class="mix-empty">読みこみ中…</li></ul>
+    <p class="mix-more" hidden><a target="_blank" rel="noopener">Mixcloud でぜんぶ見る ↗</a></p>
   </section>
 
   <!-- 全体 -->
@@ -495,6 +526,10 @@
     </div>
   </div>
 </div>
+<div id="bgm" hidden>
+  <div class="bgm-head"><span class="bgm-eq" aria-hidden="true"><i></i><i></i><i></i></span><b>DJ MIX</b><span class="bgm-title"></span><button class="bgm-close" type="button" aria-label="BGMを止める">×</button></div>
+  <div class="bgm-player"></div>
+</div>
 <div id="speech" class="off" aria-live="polite"><span></span></div>
 <div id="toast" role="status"></div>
 <div id="hint">ドラッグで見まわせます ・ 場所をタップで移動</div>
@@ -503,7 +538,7 @@
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100703';
+  const ASSET_VERSION = '2026100801';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
@@ -566,6 +601,70 @@
       const same = d.songs.length === fallback.length && d.songs.every(x => fallback.some(f => f.id === x.id));
       if (!same) render(d.songs);
     }).catch(() => {});
+  })();
+</script>
+<script>
+  // DJブース：Mixcloud のミックスを選ぶと、画面の端のプレイヤーで流れつづける（場所を移っても止まらない）
+  (() => {
+    const list = document.querySelector('.mixes');
+    const bgm = document.getElementById('bgm');
+    if (!list || !bgm) return;
+    const player = bgm.querySelector('.bgm-player');
+    let current = null;
+    const fmtLen = sec => { if (!sec) return ''; const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60; return h ? `${h}時間${m}分` : `${m}分`; };
+    const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`; };
+    const mark = () => list.querySelectorAll('.mix').forEach(li => {
+      const on = li.dataset.key === current;
+      li.classList.toggle('playing', on);
+      li.querySelector('.mix-play').textContent = on ? '再生中' : '▶ 流す';
+    });
+    const setOn = on => {
+      document.body.classList.toggle('bgm-on', on);
+      dispatchEvent(new Event('bgm:change'));
+      mark();
+    };
+    const play = mix => {
+      current = mix.key;
+      const f = document.createElement('iframe');
+      f.src = 'https://player-widget.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&hide_artwork=1&autoplay=1&feed=' + encodeURIComponent(mix.key);
+      f.title = 'Mixcloud：' + mix.name;
+      f.allow = 'autoplay; encrypted-media';
+      player.replaceChildren(f);
+      bgm.querySelector('.bgm-title').textContent = mix.name;
+      bgm.hidden = false;
+      setOn(true);
+    };
+    bgm.querySelector('.bgm-close').addEventListener('click', () => {
+      current = null;
+      player.replaceChildren();
+      bgm.hidden = true;
+      setOn(false);
+    });
+    const empty = text => list.replaceChildren(Object.assign(document.createElement('li'), { className: 'mix-empty', textContent: text }));
+    const el = (tag, props) => Object.assign(document.createElement(tag), props);
+    fetch('/api/mixes', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => {
+      const mixes = d && Array.isArray(d.mixes) ? d.mixes : [];
+      if (!mixes.length) { empty(d && d.error ? 'いまミックスを読みこめません。少しあとでもう一度どうぞ。' : 'ミックスは準備中です。'); return; }
+      list.replaceChildren(...mixes.map(mix => {
+        const li = el('li', { className: 'mix' });
+        li.dataset.key = mix.key;
+        const img = mix.picture ? el('img', { src: mix.picture, alt: '', loading: 'lazy', width: 64, height: 64 }) : el('span', { className: 'mix-noimg' });
+        const body = el('div', {});
+        body.append(el('p', { className: 'mix-title', textContent: mix.name }),
+          el('p', { className: 'mix-meta', textContent: [fmtLen(mix.length), fmtDate(mix.created)].filter(Boolean).join(' ・ ') }));
+        const btn = el('button', { type: 'button', className: 'mix-play', textContent: '▶ 流す' });
+        btn.setAttribute('aria-label', mix.name + ' を流す');
+        btn.addEventListener('click', () => { if (current !== mix.key) play(mix); });
+        li.append(img, body, btn);
+        return li;
+      }));
+      if (d.user) {
+        const more = document.querySelector('.mix-more');
+        more.querySelector('a').href = 'https://www.mixcloud.com/' + encodeURIComponent(d.user) + '/';
+        more.hidden = false;
+      }
+      mark();
+    }).catch(() => empty('いまミックスを読みこめません。少しあとでもう一度どうぞ。'));
   })();
 </script>
 <script nomodule>document.body.classList.remove('booting');</script>
