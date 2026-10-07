@@ -1,6 +1,6 @@
 // DJブースのミックス：Mixcloud にアップしたミックスの一覧を JSON で返す（Cloudflare Pages Functions）
 // Mixcloud に上げると、最大10分でサイトに出る。Mixcloud の公開APIを使うので APIキーは不要。
-const USER = ''; // Mixcloud のユーザー名（https://www.mixcloud.com/<ここ>/）
+const USER = 'えびは'; // Mixcloud のユーザー名（https://www.mixcloud.com/<ここ>/）
 const LIMIT = 20;
 const TTL = 600; // 秒。この間はキャッシュを返して Mixcloud に取りに行かない
 
