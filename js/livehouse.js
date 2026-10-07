@@ -1244,8 +1244,9 @@ class World {
 
     const pink = new THREE.Color('#ff5fa8'), blue = new THREE.Color('#5f8bff'), green = new THREE.Color('#c6ef6e');
     // ミックスを流している間だけレコードが回り、DJえびがノる（index.html の BGM プレイヤーが bgm:change を出す）
-    let playing = document.body.classList.contains('bgm-on'), groove = playing ? 1 : 0;
-    addEventListener('bgm:change', () => { playing = document.body.classList.contains('bgm-on'); });
+    const isPlaying = () => document.body.classList.contains('bgm-on') && !document.body.classList.contains('bgm-paused');
+    let playing = isPlaying(), groove = playing ? 1 : 0;
+    addEventListener('bgm:change', () => { playing = isPlaying(); });
     this.anim.push((t, dt) => {
       dt = dt || 0.016;
       groove += ((playing ? 1 : 0) - groove) * Math.min(1, dt * 3);

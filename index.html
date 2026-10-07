@@ -204,8 +204,19 @@
   .bgm-head { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; font-size: 12px; color: var(--muted); }
   .bgm-head b { font-family: var(--display); color: #c9a2ff; letter-spacing: 0.06em; font-weight: 400; }
   .bgm-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
-  .bgm-close { width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: var(--ink); cursor: pointer; font-size: 16px; line-height: 1; }
+  .bgm-btn { flex: none; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: var(--ink); cursor: pointer; font-size: 15px; line-height: 1; }
+  .bgm-btn:hover { border-color: #c9a2ff; color: #c9a2ff; }
+  .bgm-toggle { font-size: 10px; letter-spacing: -1px; }
   .bgm-player iframe { display: block; width: 100%; height: 60px; border: 0; }
+  .bgm-vol { display: flex; align-items: center; gap: 10px; padding: 6px 14px 10px; font-size: 13px; color: var(--muted); }
+  .bgm-vol input { flex: 1; min-width: 0; accent-color: #c9a2ff; height: 20px; cursor: pointer; }
+  .bgm-vol output { width: 2.2em; text-align: right; font-variant-numeric: tabular-nums; }
+  #bgm.no-vol .bgm-vol { display: none; }
+  /* たたむ：見た目だけ畳んでプレイヤーは生かしておく（display:none にすると止まる端末があるので高さを0に） */
+  #bgm.folded { width: min(320px, calc(100% - 32px)); }
+  #bgm.folded .bgm-body { height: 0; overflow: hidden; visibility: hidden; }
+  #bgm:not(.folded) .bgm-toggle { display: none; }
+  #bgm.paused .bgm-eq i { animation-play-state: paused; }
   .bgm-eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; }
   .bgm-eq i { width: 3px; background: #c9a2ff; animation: eq 0.9s ease-in-out infinite alternate; }
   .bgm-eq i:nth-child(2) { animation-delay: -0.3s; } .bgm-eq i:nth-child(3) { animation-delay: -0.6s; }
@@ -303,7 +314,7 @@
     .is3d .profile-row { grid-template-columns: auto minmax(0, 1fr); }
     .is3d .thumb { aspect-ratio: 21 / 9; }
     #hint { bottom: auto; top: calc(116px + env(safe-area-inset-top, 0px)); left: 50%; translate: -50% 0; white-space: nowrap; }
-    #bgm { bottom: auto; top: calc(112px + env(safe-area-inset-top, 0px)); left: 12px; width: calc(100% - 24px); }
+    #bgm, #bgm.folded { bottom: auto; top: calc(112px + env(safe-area-inset-top, 0px)); left: 12px; width: calc(100% - 24px); }
   }
   @media (prefers-reduced-motion: reduce) { .bgm-eq i { animation: none; height: 8px; } }
   @media (prefers-reduced-motion: reduce) {
@@ -527,8 +538,16 @@
   </div>
 </div>
 <div id="bgm" hidden>
-  <div class="bgm-head"><span class="bgm-eq" aria-hidden="true"><i></i><i></i><i></i></span><b>DJ MIX</b><span class="bgm-title"></span><button class="bgm-close" type="button" aria-label="BGMを止める">×</button></div>
-  <div class="bgm-player"></div>
+  <div class="bgm-head">
+    <span class="bgm-eq" aria-hidden="true"><i></i><i></i><i></i></span><b>DJ MIX</b><span class="bgm-title"></span>
+    <button class="bgm-btn bgm-toggle" type="button" aria-label="一時停止">❚❚</button>
+    <button class="bgm-btn bgm-fold" type="button" aria-expanded="true" aria-label="プレイヤーをたたむ">▾</button>
+    <button class="bgm-btn bgm-close" type="button" aria-label="BGMを止める">×</button>
+  </div>
+  <div class="bgm-body">
+    <div class="bgm-player"></div>
+    <label class="bgm-vol"><span aria-hidden="true">🔈</span><input type="range" min="0" max="100" step="1" value="80" aria-label="音量"><output>80</output></label>
+  </div>
 </div>
 <div id="speech" class="off" aria-live="polite"><span></span></div>
 <div id="toast" role="status"></div>
@@ -538,7 +557,7 @@
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100801';
+  const ASSET_VERSION = '2026100802';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
@@ -610,7 +629,55 @@
     const bgm = document.getElementById('bgm');
     if (!list || !bgm) return;
     const player = bgm.querySelector('.bgm-player');
+    const vol = bgm.querySelector('.bgm-vol input'), volOut = bgm.querySelector('.bgm-vol output');
+    const toggleBtn = bgm.querySelector('.bgm-toggle'), foldBtn = bgm.querySelector('.bgm-fold');
     let current = null;
+    const WIDGET = 'https://player-widget.mixcloud.com';
+    // Mixcloud のプレイヤーは postMessage で操作できる（widgetApi.js と同じやりとりを直接書く）
+    let methodId = 0;
+    const call = (methodName, ...args) => {
+      const f = player.querySelector('iframe');
+      if (f && f.contentWindow) f.contentWindow.postMessage(JSON.stringify({ type: 'method', data: { methodId: ++methodId, methodName, args } }), WIDGET);
+    };
+    const setPaused = paused => {
+      bgm.classList.toggle('paused', paused);
+      document.body.classList.toggle('bgm-paused', paused);
+      dispatchEvent(new Event('bgm:change'));
+      toggleBtn.textContent = paused ? '▶' : '❚❚';
+      toggleBtn.setAttribute('aria-label', paused ? '再生' : '一時停止');
+    };
+    addEventListener('message', e => {
+      const f = player.querySelector('iframe');
+      if (e.origin !== WIDGET || !f || e.source !== f.contentWindow) return;
+      let d; try { d = JSON.parse(e.data); } catch (err) { return; }
+      if (d.mixcloud !== 'playerWidget') return;
+      if (d.type === 'ready') f.contentWindow.postMessage(JSON.stringify({ type: 'getApi' }), WIDGET);
+      if (d.type === 'event' && d.data) {
+        // 鳴りはじめるたびに、選んでいる音量に合わせる
+        if (d.data.eventName === 'play') { setPaused(false); call('setVolume', vol.value / 100); }
+        if (d.data.eventName === 'pause' || d.data.eventName === 'ended') setPaused(true);
+      }
+    });
+    // 音量（このブラウザに覚えておく）
+    try { const v = parseInt(localStorage.getItem('ebiha-bgm-volume'), 10); if (v >= 0 && v <= 100) vol.value = v; } catch (err) { /* なくても動く */ }
+    const showVol = () => { volOut.value = vol.value; volOut.textContent = vol.value; vol.previousElementSibling.textContent = vol.value == 0 ? '🔇' : vol.value < 50 ? '🔈' : '🔊'; };
+    showVol();
+    vol.addEventListener('input', () => {
+      showVol();
+      call('setVolume', vol.value / 100);
+      try { localStorage.setItem('ebiha-bgm-volume', vol.value); } catch (err) { /* なくても動く */ }
+    });
+    // iPhone・iPad はページから音量を変えられない（本体のボタンだけ）ので、バーを出さない
+    try { const a = new Audio(); a.volume = 0.5; if (a.volume !== 0.5) bgm.classList.add('no-vol'); } catch (err) { /* そのまま */ }
+    // たたむ／ひらく（再生は止めない）
+    const fold = on => {
+      bgm.classList.toggle('folded', on);
+      foldBtn.textContent = on ? '▴' : '▾';
+      foldBtn.setAttribute('aria-expanded', String(!on));
+      foldBtn.setAttribute('aria-label', on ? 'プレイヤーをひらく' : 'プレイヤーをたたむ');
+    };
+    foldBtn.addEventListener('click', () => fold(!bgm.classList.contains('folded')));
+    toggleBtn.addEventListener('click', () => call('togglePlay'));
     const fmtLen = sec => { if (!sec) return ''; const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60; return h ? `${h}時間${m}分` : `${m}分`; };
     const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`; };
     const mark = () => list.querySelectorAll('.mix').forEach(li => {
@@ -632,12 +699,15 @@
       player.replaceChildren(f);
       bgm.querySelector('.bgm-title').textContent = mix.name;
       bgm.hidden = false;
+      setPaused(false);
       setOn(true);
     };
     bgm.querySelector('.bgm-close').addEventListener('click', () => {
       current = null;
       player.replaceChildren();
       bgm.hidden = true;
+      fold(false);
+      setPaused(false);
       setOn(false);
     });
     const empty = text => list.replaceChildren(Object.assign(document.createElement('li'), { className: 'mix-empty', textContent: text }));
