@@ -1,5 +1,5 @@
 // えびは LIVE HOUSE — トップページの3D模型
-// 受付（プロフィール）／バーカン（作品一覧・水槽からえびダイブへ）／DJブース（入口の壁ぞい、チケットなしで入れる）／ステージとフロア（おすすめの曲）
+// 受付（プロフィール）／バーカン（作品一覧・水槽からえびダイブへ）／DJブース（ロビーの左の壁ぞい、チケットなしで入れる）／ステージとフロア（おすすめの曲）
 import * as THREE from '../vendor/three.module.min.js';
 
 const FONT_DISPLAY = '"Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif';
@@ -85,7 +85,7 @@ export async function start() {
   try {
     await Promise.race([
       Promise.all([
-        document.fonts.load(`80px ${FONT_DISPLAY}`, 'えびはLIVEHOUSEBARMENU受付RECEPTIONCOMINGSOONダイブ食堂作品一覧ENTRANCEDJ今後なにかが始まりますおたのしみに水槽→STAGEFLOOR0123456789DRINKTICKETFREEGALLERYEBI'),
+        document.fonts.load(`80px ${FONT_DISPLAY}`, 'えびはLIVEHOUSEBARMENU受付RECEPTIONCOMINGSOONダイブ食堂作品一覧DJ今後なにかが始まりますおたのしみに水槽→STAGEFLOOR0123456789DRINKTICKETFREEGALLERYEBI'),
         document.fonts.load(`700 40px ${FONT_BODY}`, 'えびダイブ食堂作品一覧水槽をのぞくとゲームの世界へ本日のおすすめランキング料理ドリンクビールレモンサワー受付はこちら'),
       ]),
       new Promise(r => setTimeout(r, 2500)),
@@ -325,7 +325,7 @@ export async function start() {
     { id: 'bar', label: 'バーカン', sub: '作品一覧', at: [-6.6, 3.55, -1.0] },
     { id: 'dive', label: '水槽をのぞく', sub: 'えびダイブ食堂へ', at: [-6.15, 2.55, 2.45], fish: true },
     { id: 'stage', label: 'ステージ', sub: 'おすすめの曲', at: [0, 4.6, -7.0] },
-    { id: 'dj', label: 'DJブース', sub: '入口の横', at: [-7.1, 3.15, 4.75] },
+    { id: 'dj', label: 'DJブース', sub: 'DJ mix', at: [-7.1, 3.15, 4.75] },
   ];
   const markers = markerDefs.map(d => {
     const b = document.createElement('button');
@@ -823,14 +823,6 @@ class World {
     this.box(6.6, 0.04, 0.27, cut, 4.7, 3.2, 3.2);
     this.box(6.6, 0.16, 0.3, this.mat('#c99a5b', { metalness: 0.3, roughness: 0.4 }), 3.5, 0.08, 3.36);
 
-    // 入口ドア（左の壁）
-    const door = this.mat('#3a1f18', { roughness: 0.6 });
-    this.box(0.12, 2.3, 1.5, door, -7.82, 1.15, 6.4);
-    this.box(0.06, 0.06, 0.3, this.mat('#d9b46a', { metalness: 0.8, roughness: 0.3 }), -7.72, 1.1, 5.95);
-    const ent = neonPlane('ENTRANCE', '#7ef0ff', 1.6, 0.36);
-    ent.rotation.y = Math.PI / 2; ent.position.set(-7.84, 2.6, 6.4);
-    this.scene.add(ent);
-
     // 奥の壁のポスター
     const posters = [['#ff7a57', 'えびダイブ\n食堂'], ['#c6ef6e', 'NEXT\nLIVE\n???'], ['#7ef0ff', 'SHRIMP\nNIGHT']];
     posters.forEach(([c, t], i) => {
@@ -1170,7 +1162,7 @@ class World {
     this.hotspot('dive', [1.1, 2.3, 1.6, -6.2, 1.15, 2.45]);
   }
 
-  // ---------- DJブース（ENTRANCEの壁ぞい、柵と入口ドアのあいだ。ロビー向き） ----------
+  // ---------- DJブース（ロビーの左の壁ぞい、柵の手前。ロビー向き） ----------
   // グループの +z がロビー側（世界の +x）、-z が壁側
   djBooth() {
     const g = new THREE.Group();
