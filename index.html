@@ -483,7 +483,7 @@
       </div>
       <button class="fold" type="button" aria-expanded="true" aria-label="パネルをたたむ">▼</button>
     </div>
-    <p class="lead">えびはのDJ mix。選ぶと、館内のどこにいてもBGMとして流れます。</p>
+    <p class="lead">えびはのDJ mix。館内のどこにいてもBGMとして流れます。開いたときはランダムに1本。好きなものを選んで切りかえられます。</p>
     <!-- Mixcloud にアップしたミックスが自動で並ぶ（/api/mixes） -->
     <ul class="mixes" aria-live="polite"><li class="mix-empty">読みこみ中…</li></ul>
     <p class="mix-more" hidden><a target="_blank" rel="noopener">Mixcloud でぜんぶ見る ↗</a></p>
@@ -546,7 +546,7 @@
   </div>
   <div class="bgm-body">
     <div class="bgm-player"></div>
-    <label class="bgm-vol"><span aria-hidden="true">🔈</span><input type="range" min="0" max="100" step="1" value="80" aria-label="音量"><output>80</output></label>
+    <label class="bgm-vol"><span aria-hidden="true">🔈</span><input type="range" min="0" max="100" step="1" value="30" aria-label="音量"><output>30</output></label>
   </div>
 </div>
 <div id="speech" class="off" aria-live="polite"><span></span></div>
@@ -557,7 +557,7 @@
 
 <script type="module">
   // js/livehouse.js はブラウザに4時間キャッシュされるので、更新したら必ずこの番号を変える
-  const ASSET_VERSION = '2026100802';
+  const ASSET_VERSION = '2026100803';
   // ?flat をつけると3Dなしのふつうのページで見られる
   const flat = new URLSearchParams(location.search).has('flat');
   const canWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
@@ -651,10 +651,15 @@
       if (e.origin !== WIDGET || !f || e.source !== f.contentWindow) return;
       let d; try { d = JSON.parse(e.data); } catch (err) { return; }
       if (d.mixcloud !== 'playerWidget') return;
-      if (d.type === 'ready') f.contentWindow.postMessage(JSON.stringify({ type: 'getApi' }), WIDGET);
+      if (d.type === 'ready') {
+        f.contentWindow.postMessage(JSON.stringify({ type: 'getApi' }), WIDGET);
+        call('setVolume', vol.value / 100);
+        // プレイヤーの準備より先に操作があったときの取りこぼし対策
+        if (waiting && navigator.userActivation && navigator.userActivation.hasBeenActive) call('play');
+      }
       if (d.type === 'event' && d.data) {
         // 鳴りはじめるたびに、選んでいる音量に合わせる
-        if (d.data.eventName === 'play') { setPaused(false); call('setVolume', vol.value / 100); }
+        if (d.data.eventName === 'play') { setPaused(false); call('setVolume', vol.value / 100); stopWaiting(); }
         if (d.data.eventName === 'pause' || d.data.eventName === 'ended') setPaused(true);
       }
     });
@@ -690,6 +695,31 @@
       dispatchEvent(new Event('bgm:change'));
       mark();
     };
+    // 開いたときにランダムで流す。音つきの自動再生はブラウザに止められることが多いので、
+    // そのときは最初にどこかをクリック・タップ・キー操作した瞬間に鳴らす
+    let waiting = false;
+    const onFirstGesture = e => {
+      if (!waiting) return;
+      if (e.target.closest && e.target.closest('#bgm, .mix-play')) return; // プレイヤーや曲選びの操作はそちらにまかせる
+      call('play');
+    };
+    const stopWaiting = () => {
+      waiting = false;
+      for (const t of ['pointerdown', 'keydown']) removeEventListener(t, onFirstGesture, true);
+    };
+    const autoStart = mixes => {
+      play(mixes[Math.floor(Math.random() * mixes.length)]);
+      setPaused(true); // 実際に鳴ったら play イベントで切りかわる
+      fold(true);
+      waiting = true;
+      for (const t of ['pointerdown', 'keydown']) addEventListener(t, onFirstGesture, true);
+    };
+    // ステージで YouTube を流すときは、BGMを止める
+    document.addEventListener('click', e => {
+      if (!current || !e.target.closest || !e.target.closest('.song-here')) return;
+      stopWaiting();
+      call('pause');
+    }, true);
     const play = mix => {
       current = mix.key;
       const f = document.createElement('iframe');
@@ -706,6 +736,7 @@
       current = null;
       player.replaceChildren();
       bgm.hidden = true;
+      stopWaiting();
       fold(false);
       setPaused(false);
       setOn(false);
@@ -734,6 +765,7 @@
         more.hidden = false;
       }
       mark();
+      if (document.body.classList.contains('is3d') && !current) autoStart(mixes);
     }).catch(() => empty('いまミックスを読みこめません。少しあとでもう一度どうぞ。'));
   })();
 </script>
